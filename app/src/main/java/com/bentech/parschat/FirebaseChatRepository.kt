@@ -48,6 +48,14 @@ class FirebaseChatRepository(
             }.addOnFailureListener { onResult(Result.failure(it)) }
     }
 
+    fun saveDeviceToken(token: String, onResult: ((Result<Unit>) -> Unit)? = null) {
+        val uid = currentUserId() ?: run { onResult?.invoke(Result.failure(IllegalStateException("ورود لازم است."))); return }
+        db.collection("users").document(uid).collection("devices").document(token)
+            .set(mapOf("token" to token, "updatedAt" to FieldValue.serverTimestamp()))
+            .addOnSuccessListener { onResult?.invoke(Result.success(Unit)) }
+            .addOnFailureListener { onResult?.invoke(Result.failure(it)) }
+    }
+
     fun setPresence(online: Boolean, onResult: ((Result<Unit>) -> Unit)? = null) {
         val uid = currentUserId() ?: run { onResult?.invoke(Result.failure(IllegalStateException("ورود لازم است."))); return }
         val updates = if (online) mapOf("online" to true) else mapOf("online" to false, "lastSeen" to FieldValue.serverTimestamp())
