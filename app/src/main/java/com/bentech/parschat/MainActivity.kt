@@ -197,9 +197,8 @@ class MainActivity:ComponentActivity(){
  Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Night,Navy,Color(0xFF263D6A))))){
   Canvas(Modifier.fillMaxSize()){val c=Offset(size.width/2,size.height*.42f);for(i in 1..5)drawCircle(Gold.copy(alpha=glow*.1f),i*52f,c,style= androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()));for(i in 0..15){val a=Math.PI*2*i/16;drawLine(Gold.copy(alpha=.12f),Offset(c.x,c.y),Offset(c.x+kotlin.math.cos(a).toFloat()*300,c.y+kotlin.math.sin(a).toFloat()*300),1.dp.toPx())}}
   Column(Modifier.fillMaxSize().padding(28.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){
-   FaravaharChatMark(diameter=154.dp,glow=glow)
-   Spacer(Modifier.height(28.dp));Text("PARS CHAT",fontSize=31.sp,color=Gold,fontWeight=FontWeight.Black,letterSpacing=4.sp)
-   Text("شکوهِ گذشته، پیوندِ امروز",color=Turquoise,fontSize=16.sp,modifier=Modifier.padding(top=10.dp))
+   ParsBrandLockup(emblemSize=116.dp,glow=glow)
+   Text("شکوهِ گذشته، پیوندِ امروز",color=Turquoise,fontSize=16.sp,modifier=Modifier.padding(top=20.dp))
    Text("پیام‌رسانی با الهام از تمدن ایران‌زمین",color=Color(0xFFD5DCEC),fontSize=13.sp,modifier=Modifier.padding(top=12.dp))
    Spacer(Modifier.height(48.dp));Button(onClick=onGo,modifier=Modifier.fillMaxWidth().height(56.dp),shape=RoundedCornerShape(18.dp),colors=ButtonDefaults.buttonColors(containerColor=Gold)){Text("ورود به پارس چت",color=Night,fontWeight=FontWeight.Bold,fontSize=16.sp)}
    Spacer(Modifier.height(36.dp));Text("ساخته بنیامین نوری دفرازی",color=Color(0xFFB8C5DD),fontSize=12.sp)
@@ -217,8 +216,8 @@ class MainActivity:ComponentActivity(){
   Row(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Night,Color(0xFF1B3155),Night))).padding(horizontal=18.dp,vertical=14.dp),verticalAlignment=Alignment.CenterVertically){
    FaravaharChatMark(diameter=52.dp)
    Column(Modifier.weight(1f).padding(start=12.dp)){
-    Text("PARS CHAT",color=Gold,fontWeight=FontWeight.Black,fontSize=18.sp,letterSpacing=2.sp)
-    Text("درود، $name",color=Color(0xFFD7DFEA),fontSize=12.sp)
+    Text("چت پارس",color=Gold,fontWeight=FontWeight.Black,fontSize=18.sp)
+    Text("PARS CHAT  •  درود، $name",color=Color(0xFFD7DFEA),fontSize=10.sp)
    }
    IconButton(onProfile){Icon(Icons.Default.AccountCircle,null,tint=Gold)}
    IconButton(onSettings){Icon(Icons.Default.Settings,null,tint=Gold)}
