@@ -118,6 +118,24 @@ class MainActivity:ComponentActivity(){
    onDispose { registration.remove() }
   }
  }
+ DisposableEffect(sessionUid, contacts.map { it.conversationId }.sorted().joinToString("|")) {
+  val uid=sessionUid
+  val listeners=mutableListOf<com.google.firebase.firestore.ListenerRegistration>()
+  if(uid!=null){
+   contacts.forEach { person ->
+    if(person.conversationId.isNotBlank()){
+     val registration=repository.observeMessages(person.conversationId,onUpdate={snapshot->
+      val unread=snapshot?.documents.orEmpty().count { doc ->
+       doc.getString("senderId")!=uid && (doc.get("readBy") as? Map<*,*>)?.get(uid)!=true
+      }
+      contacts=contacts.map { if(it.conversationId==person.conversationId)it.copy(unread=unread) else it }
+     },onError={})
+     listeners.add(registration)
+    }
+   }
+  }
+  onDispose { listeners.forEach { it.remove() } }
+ }
  var search by remember{mutableStateOf("")}
  val chats=remember{mutableStateMapOf<String,MutableList<Message>>()}
  val bg=if(dark)Night else Cream
