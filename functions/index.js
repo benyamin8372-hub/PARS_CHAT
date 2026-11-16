@@ -54,19 +54,21 @@ exports.notifyConversationMembers = onDocumentCreated(
     const tokens = tokenDocs.flatMap((snapshot) => snapshot.docs.map((doc) => doc.get("token")).filter(Boolean));
     if (!tokens.length) return;
 
-    const response = await getMessaging().sendEachForMulticast({
-      tokens,
-      notification: { title, body },
-      data: { conversationId, messageId: event.params.messageId, type: String(message.type || "text") },
-      android: { priority: "high", notification: { channelId: "pars_chat_messages" } }
-    });
-
     const invalid = [];
-    response.responses.forEach((result, index) => {
-      if (!result.success && ["messaging/registration-token-not-registered", "messaging/invalid-registration-token"].includes(result.error && result.error.code)) {
-        invalid.push(tokens[index]);
-      }
-    });
+    for (let offset = 0; offset < tokens.length; offset += 500) {
+      const chunk = tokens.slice(offset, offset + 500);
+      const response = await getMessaging().sendEachForMulticast({
+        tokens: chunk,
+        notification: { title, body },
+        data: { conversationId, messageId: event.params.messageId, type: String(message.type || "text") },
+        android: { priority: "high", notification: { channelId: "pars_chat_messages" } }
+      });
+      response.responses.forEach((result, index) => {
+        if (!result.success && ["messaging/registration-token-not-registered", "messaging/invalid-registration-token"].includes(result.error && result.error.code)) {
+          invalid.push(chunk[index]);
+        }
+      });
+    }
     if (invalid.length) {
       const batch = db.batch();
       for (const token of invalid) {
