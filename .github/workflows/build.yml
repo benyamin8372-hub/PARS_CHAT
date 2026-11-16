@@ -1,10 +1,13 @@
 name: Build PARS CHAT APK
+
+# APK builds are intentionally manual during the design-first phase.
+# Run workflow_dispatch only after the complete interface is approved.
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
+
 permissions:
   contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,7 +28,7 @@ jobs:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
           if [ -z "$GOOGLE_SERVICES_JSON" ]; then
-            echo "Missing GOOGLE_SERVICES_JSON repository secret. Add the full google-services.json content in GitHub Settings > Secrets and variables > Actions."
+            echo "Missing GOOGLE_SERVICES_JSON repository secret."
             exit 1
           fi
           printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
