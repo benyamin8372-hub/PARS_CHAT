@@ -354,7 +354,7 @@ class MainActivity:ComponentActivity(){
       doc.getString("type") ?: "text",doc.getString("mediaUrl"),doc.getTimestamp("editedAt")!=null,doc.getBoolean("deleted")==true,readBy,
       doc.getString("replyToId"),doc.getString("replyToText"),doc.getString("forwardedFrom"))
     }
-    val unread=docs.filter{it.getString("senderId")!=currentUid && (it.get("readBy") as? Map<*,*>)?.get(currentUid)!=true}.map{it.id}
+    val unread=docs.filter{it.getString("senderId")!=currentUid && (it.get("readBy") as? Map<*,*>)?.get(currentUid)!=true}.map{it.id}.take(400)
     if(unread.isNotEmpty())repository.markRead(conversationId,unread)
    },onError={chatError=it.localizedMessage ?: "دریافت پیام‌ها ناموفق بود."})
    onDispose{registration.remove()}
