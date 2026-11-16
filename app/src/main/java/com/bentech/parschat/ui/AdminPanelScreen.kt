@@ -20,7 +20,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
 
-private data class AdminUser(val uid: String, val name: String, val disabled: Boolean)
+private data class AdminUser(val uid: String, val name: String)
 
 @Composable
 fun AdminPanelScreen(background: Color, surface: Color, foreground: Color, onBack: () -> Unit) {
@@ -51,7 +51,7 @@ fun AdminPanelScreen(background: Color, surface: Color, foreground: Color, onBac
                     disabled = statuses.filterValues { it }.keys
                     val db = FirebaseFirestore.getInstance()
                     db.collection("users").get().addOnSuccessListener { userSnapshot ->
-                        users = userSnapshot.documents.map { AdminUser(it.id, it.getString("displayName") ?: "کاربر", statuses[it.id] ?: false) }
+                        users = userSnapshot.documents.map { AdminUser(it.id, it.getString("displayName") ?: "کاربر") }
                         userCount = userSnapshot.size()
                         db.collection("conversations").get().addOnSuccessListener { conversations ->
                             conversationCount = conversations.size()
