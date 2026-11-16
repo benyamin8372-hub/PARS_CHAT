@@ -27,8 +27,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.DisposableEffect
 import com.bentech.parschat.FirebaseChatRepository
 import com.bentech.parschat.ui.components.DimensionalAvatar
+import java.text.SimpleDateFormat
+import java.util.Locale
 
-private data class DirectoryEntry(val uid: String, val name: String)
+private data class DirectoryEntry(val uid: String, val name: String, val status: String, val online: Boolean)
 
 @Composable
 fun UserDirectoryScreen(
@@ -58,7 +60,20 @@ fun UserDirectoryScreen(
                             val uid = doc.id
                             val displayName = doc.getString("displayName")?.trim().orEmpty()
                             if (uid == currentUid || displayName.isBlank()) null
-                            else DirectoryEntry(uid, displayName)
+                            else {
+                                val onlineVisible = doc.getBoolean("showOnline") != false
+                                val lastSeenVisible = doc.getBoolean("showLastSeen") != false
+                                val online = onlineVisible && doc.getBoolean("online") == true
+                                val lastSeen = if (lastSeenVisible) doc.getTimestamp("lastSeen")?.toDate()?.let {
+                                    SimpleDateFormat("yyyy/MM/dd  HH:mm", Locale.getDefault()).format(it)
+                                } else null
+                                val status = when {
+                                    online -> "آنلاین"
+                                    lastSeen != null -> "آخرین بازدید: $lastSeen"
+                                    else -> "وضعیت پنهان است"
+                                }
+                                DirectoryEntry(uid, displayName, status, online)
+                            }
                         }
                         loading = false
                         error = null
@@ -122,7 +137,7 @@ fun UserDirectoryScreen(
                         DimensionalAvatar(label = user.name, diameter = 48.dp)
                         Column(Modifier.weight(1f).padding(start = 12.dp)) {
                             Text(user.name, color = foreground, fontWeight = FontWeight.SemiBold)
-                            Text("برای شروع گفتگو لمس کن", color = Color.Gray, fontSize = 11.sp)
+                            Text(user.status, color = if (user.online) Color(0xFF55C8BC) else Color.Gray, fontSize = 11.sp)
                         }
                         Text("گفتگو", color = Color(0xFFC9A45D), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
