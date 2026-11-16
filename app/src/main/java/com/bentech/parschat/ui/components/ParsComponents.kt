@@ -197,10 +197,6 @@ fun ParsMessageBubble(
         Spacer(Modifier.size(5.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(time, color = PaleGold.copy(alpha = .78f), fontSize = 10.sp)
-            if (outgoing) {
-                Spacer(Modifier.width(5.dp))
-                Text("✓✓", color = Turquoise, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            }
         }
     }
 }
