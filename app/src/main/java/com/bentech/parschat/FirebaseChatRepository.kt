@@ -117,16 +117,12 @@ class FirebaseChatRepository(
         db.collection("users").document(me).collection("blocked").document(otherUserId).get()
             .addOnSuccessListener { blocked ->
                 if (blocked.exists()) { onResult(Result.failure(IllegalStateException("ابتدا کاربر را از فهرست مسدودها خارج کنید."))); return@addOnSuccessListener }
-                db.collection("users").document(otherUserId).collection("blocked").document(me).get()
-                    .addOnSuccessListener { blockedByOther ->
-                        if (blockedByOther.exists()) { onResult(Result.failure(IllegalStateException("امکان شروع گفتگو با این کاربر وجود ندارد."))); return@addOnSuccessListener }
-                        ref.get().addOnSuccessListener { snapshot ->
-                            if (snapshot.exists()) onResult(Result.success(id))
-                            else ref.set(mapOf("participants" to participants, "type" to "private", "createdBy" to me,
-                                "createdAt" to FieldValue.serverTimestamp(), "updatedAt" to FieldValue.serverTimestamp()))
-                                .addOnSuccessListener { onResult(Result.success(id)) }.addOnFailureListener { onResult(Result.failure(it)) }
-                        }.addOnFailureListener { onResult(Result.failure(it)) }
-                    }.addOnFailureListener { onResult(Result.failure(it)) }
+                ref.get().addOnSuccessListener { snapshot ->
+                    if (snapshot.exists()) onResult(Result.success(id))
+                    else ref.set(mapOf("participants" to participants, "type" to "private", "createdBy" to me,
+                        "createdAt" to FieldValue.serverTimestamp(), "updatedAt" to FieldValue.serverTimestamp()))
+                        .addOnSuccessListener { onResult(Result.success(id)) }.addOnFailureListener { onResult(Result.failure(it)) }
+                }.addOnFailureListener { onResult(Result.failure(it)) }
             }.addOnFailureListener { onResult(Result.failure(it)) }
     }
 
