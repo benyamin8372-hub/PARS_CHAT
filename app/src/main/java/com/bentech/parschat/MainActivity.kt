@@ -376,7 +376,7 @@ class MainActivity:ComponentActivity(){
    Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically){
     IconButton(onClick={imagePicker.launch("image/*")},enabled=!uploadBusy){Icon(Icons.Default.Image,null,tint=Turquoise)}
     IconButton(onClick={audioPicker.launch("audio/*")},enabled=!uploadBusy){Icon(Icons.Default.AttachFile,null,tint=Turquoise)}
-    IconButton(onClick={if(recording)finishRecording() else if(ContextCompat.checkSelfPermission(context,Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED)beginRecording() else microphonePermission.launch(Manifest.permission.RECORD_AUDIO),enabled=!uploadBusy){Icon(if(recording)Icons.Default.Stop else Icons.Default.Mic,null,tint=if(recording)Color(0xFFE57373) else Turquoise)}
+    IconButton(onClick={if(recording)finishRecording() else if(ContextCompat.checkSelfPermission(context,Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED)beginRecording() else microphonePermission.launch(Manifest.permission.RECORD_AUDIO)},enabled=!uploadBusy){Icon(if(recording)Icons.Default.Stop else Icons.Default.Mic,null,tint=if(recording)Color(0xFFE57373) else Turquoise)}
     Row(Modifier.weight(1f).clip(RoundedCornerShape(22.dp)).background(bg).padding(horizontal=13.dp,vertical=5.dp),verticalAlignment=Alignment.CenterVertically){
      BasicTextField(draft,{draft=it},Modifier.weight(1f).padding(vertical=9.dp),textStyle=TextStyle(color=fg),decorationBox={inner->if(draft.isEmpty())Text("پیام بنویس...",color=Color.Gray);inner()})
      Icon(Icons.Default.EmojiEmotions,null,tint=Color.Gray)
