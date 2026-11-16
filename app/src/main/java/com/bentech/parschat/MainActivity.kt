@@ -82,11 +82,12 @@ class MainActivity:ComponentActivity(){
  val context= LocalContext.current
  var dark by remember{mutableStateOf(true)}
  var name by remember{mutableStateOf(FirebaseAuth.getInstance().currentUser?.displayName ?: "کاربر")}
+ var photoUrl by remember{mutableStateOf<String?>(null)}
  var showOnline by remember{mutableStateOf(true)}
  var showLastSeen by remember{mutableStateOf(true)}
  LaunchedEffect(sessionUid){
   val uid=sessionUid
-  if(uid!=null) FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name;showOnline=doc.getBoolean("showOnline")!=false;showLastSeen=doc.getBoolean("showLastSeen")!=false }
+  if(uid!=null) FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name;photoUrl=doc.getString("photoUrl");showOnline=doc.getBoolean("showOnline")!=false;showLastSeen=doc.getBoolean("showLastSeen")!=false }
  }
  DisposableEffect(sessionUid){
   val uid=sessionUid
@@ -168,7 +169,7 @@ class MainActivity:ComponentActivity(){
 
     Spacer(Modifier.height(16.dp));Text("درباره برنامه",color=fg,fontWeight=FontWeight.Bold);Text("PARS CHAT  •  نسخه ۱.۱.۰",color=Gold);Text("ساخته بنیامین نوری دفرازی",color=fg);Spacer(Modifier.height(24.dp));Button(onClick={FirebaseAuth.getInstance().signOut();sessionUid=null;page="welcome"},modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF8D3D45))){Text("خروج از حساب",color=Color.White)}
    }
-   else->Profile(name,{newName->name=newName;FirebaseAuth.getInstance().currentUser?.uid?.let{uid->FirebaseFirestore.getInstance().collection("users").document(uid).update("displayName",newName)}},bg,surface,fg){page="home"}
+   else->Profile(name,photoUrl,{newName->name=newName;repository.updateDisplayName(newName){result->result.onFailure{Toast.makeText(context,it.localizedMessage,Toast.LENGTH_SHORT).show()}}},{uri->repository.uploadProfilePhoto(uri){result->result.onSuccess{photoUrl=it}.onFailure{Toast.makeText(context,it.localizedMessage ?: "بارگذاری عکس ناموفق بود",Toast.LENGTH_LONG).show()}}},bg,surface,fg){page="home"}
   }
  }
 }
@@ -432,11 +433,16 @@ class MainActivity:ComponentActivity(){
 }
 @Composable private fun CallPage(name:String,end:()->Unit){Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Night,Navy))),contentAlignment=Alignment.Center){Column(horizontalAlignment=Alignment.CenterHorizontally){Box(Modifier.size(126.dp).background(Brush.linearGradient(listOf(Gold,Turquoise)),CircleShape),contentAlignment=Alignment.Center){Text(name.take(1),color=Night,fontSize=52.sp,fontWeight=FontWeight.Bold)};Spacer(Modifier.height(22.dp));Text(name,color=Color.White,fontSize=28.sp,fontWeight=FontWeight.Bold);Text("تماس نمایشی",color=Gold,modifier=Modifier.padding(8.dp));Text("این نسخه هنوز به سرویس تماس واقعی متصل نیست.",color=Color.LightGray,fontSize=11.sp);Spacer(Modifier.height(60.dp));IconButton(end,Modifier.size(64.dp).background(Color(0xFFE14D5A),CircleShape)){Icon(Icons.Default.CallEnd,null,tint=Color.White)}}}}
 @Composable private fun Page(title:String,sub:String,bg:Color,fg:Color,back:()->Unit,content:@Composable ColumnScope.()->Unit){Column(Modifier.fillMaxSize().background(bg).padding(18.dp)){Row(verticalAlignment=Alignment.CenterVertically){IconButton(back){Icon(Icons.Default.ArrowBack,null,tint=fg)};Text(title,color=fg,fontSize=24.sp,fontWeight=FontWeight.Bold)};Text(sub,color=Color.Gray,modifier=Modifier.padding(start=8.dp,bottom=16.dp));content()}}
-@Composable private fun Profile(name:String,onName:(String)->Unit,bg:Color,surface:Color,fg:Color,back:()->Unit){
+@Composable private fun Profile(name:String,photoUrl:String?,onName:(String)->Unit,onPhoto:(Uri)->Unit,bg:Color,surface:Color,fg:Color,back:()->Unit){
  var draft by remember(name){mutableStateOf(name)}
+ val picker=rememberLauncherForActivityResult(ActivityResultContracts.GetContent()){uri->if(uri!=null)onPhoto(uri)}
  Page("نمایه من","اطلاعات نمایشی حساب",bg,fg,back){
-  Box(Modifier.fillMaxWidth().padding(20.dp),contentAlignment=Alignment.Center){Box(Modifier.size(90.dp).background(Brush.linearGradient(listOf(Gold,Turquoise)),CircleShape),contentAlignment=Alignment.Center){Text(draft.take(1),color=Night,fontSize=38.sp,fontWeight=FontWeight.Bold)}}
-  OutlinedTextField(draft,{draft=it},Modifier.fillMaxWidth(),label={Text("نام نمایشی")},singleLine=true)
+  Box(Modifier.fillMaxWidth().padding(20.dp),contentAlignment=Alignment.Center){
+   if(photoUrl!=null)AsyncImage(model=photoUrl,contentDescription="تصویر نمایه",modifier=Modifier.size(104.dp).clip(CircleShape))
+   else Box(Modifier.size(104.dp).background(Brush.linearGradient(listOf(Gold,Turquoise)),CircleShape),contentAlignment=Alignment.Center){Text(draft.take(1),color=Night,fontSize=42.sp,fontWeight=FontWeight.Bold)}
+  }
+  OutlinedButton(onClick={picker.launch("image/*")},modifier=Modifier.fillMaxWidth()){Text("انتخاب تصویر نمایه")}
+  OutlinedTextField(draft,{draft=it},Modifier.fillMaxWidth().padding(top=12.dp),label={Text("نام نمایشی")},singleLine=true)
   Button({if(draft.isNotBlank())onName(draft.trim())},Modifier.fillMaxWidth().padding(top=12.dp),colors=ButtonDefaults.buttonColors(containerColor=Gold)){Text("ذخیره تغییرات",color=Night,fontWeight=FontWeight.Bold)}
   Text("سازنده: بنیامین نوری دفرازی",color=Color.Gray,modifier=Modifier.padding(top=28.dp),fontSize=12.sp)
  }
