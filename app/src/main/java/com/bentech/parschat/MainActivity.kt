@@ -422,7 +422,7 @@ class MainActivity:ComponentActivity(){
  if(forwardTarget!=null){
   AlertDialog(onDismissRequest={forwardTarget=null},title={Text("انتخاب مقصد فوروارد")},text={
    Column { allConversations.filter{it.conversationId!=conversationId}.take(8).forEach{target->
-    TextButton(onClick={repository.forwardMessage(target.conversationId,forwardTarget!!.body){it.onFailure{e->chatError=e.localizedMessage}};forwardTarget=null}){Text(target.name)}
+    TextButton(onClick={repository.forwardMessage(target.conversationId,forwardTarget!!.body,forwardTarget!!.id){it.onFailure{e->chatError=e.localizedMessage}};forwardTarget=null}){Text(target.name)}
    };if(allConversations.none{it.conversationId!=conversationId})Text("گفتگوی دیگری برای فوروارد وجود ندارد.") }
   },confirmButton={},dismissButton={TextButton(onClick={forwardTarget=null}){Text("بستن")}})
  }
