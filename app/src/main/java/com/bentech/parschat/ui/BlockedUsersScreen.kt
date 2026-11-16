@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bentech.parschat.FirebaseChatRepository
+import com.bentech.parschat.ui.components.FaravaharChatMark
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -47,6 +48,8 @@ fun BlockedUsersScreen(background: Color, surface: Color, foreground: Color, onB
     Column(Modifier.fillMaxSize().background(background).statusBarsPadding().navigationBarsPadding().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = foreground) }
+            FaravaharChatMark(diameter = 36.dp, glow = .72f)
+            Spacer(Modifier.width(10.dp))
             Text("کاربران مسدودشده", color = foreground, fontSize = 21.sp)
         }
         when {
