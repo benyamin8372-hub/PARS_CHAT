@@ -62,7 +62,7 @@ private val Gold = Color(0xFFD8B45A)
 private val Turquoise = Color(0xFF55C8BC)
 private val Cream = Color(0xFFF5F1E7)
 private val Ink = Color(0xFF172344)
-private data class Person(val name:String,val last:String,val time:String,val unread:Int,val avatar:String,val uid:String="",val conversationId:String="",val isGroup:Boolean=false)
+private data class Person(val name:String,val last:String,val time:String,val unread:Int,val avatar:String,val uid:String="",val conversationId:String="",val isGroup:Boolean=false,val photoUrl:String?=null)
 private data class Message(val body:String,val mine:Boolean,val time:String,val id:String="",val senderId:String="",val type:String="text",val mediaUrl:String?=null,val edited:Boolean=false,val deleted:Boolean=false,val readBy:Map<String,Boolean> = emptyMap(),val replyToId:String?=null,val replyToText:String?=null,val forwardedFrom:String?=null)
 
 class MainActivity:ComponentActivity(){
@@ -112,7 +112,7 @@ class MainActivity:ComponentActivity(){
       FirebaseFirestore.getInstance().collection("users").document(otherUid).get().addOnSuccessListener { profile ->
        if(sessionUid==uid && profile.exists()){
         val displayName=profile.getString("displayName")?.takeIf{it.isNotBlank()} ?: "کاربر"
-        val item=Person(displayName,lastMessage,time,0,displayName.take(1),otherUid,conversation.id,false)
+        val item=Person(displayName,lastMessage,time,0,displayName.take(1),otherUid,conversation.id,false,profile.getString("photoUrl"))
         contacts=(contacts.filterNot{it.conversationId==conversation.id}+item)
        }
       }
@@ -264,7 +264,7 @@ class MainActivity:ComponentActivity(){
 }
 @Composable private fun PersonRow(person:Person,surface:Color,fg:Color,onClick:()->Unit){
  Row(Modifier.fillMaxWidth().shadow(2.dp,RoundedCornerShape(18.dp)).clip(RoundedCornerShape(18.dp)).background(surface).clickable(onClick=onClick).padding(13.dp),verticalAlignment=Alignment.CenterVertically){
-  DimensionalAvatar(label=person.avatar,diameter=50.dp,online=false)
+  if(person.photoUrl!=null)AsyncImage(model=person.photoUrl,contentDescription="تصویر ${person.name}",modifier=Modifier.size(50.dp).clip(CircleShape)) else DimensionalAvatar(label=person.avatar,diameter=50.dp,online=false)
   Column(Modifier.weight(1f).padding(start=12.dp)){Text(person.name,color=fg,fontWeight=FontWeight.Bold);Text(person.last,color=Color.Gray,fontSize=12.sp,maxLines=1)}
   Column(horizontalAlignment=Alignment.End){Text(person.time,color=Color.Gray,fontSize=10.sp);if(person.unread>0){Spacer(Modifier.height(5.dp));Box(Modifier.size(19.dp).background(Turquoise,CircleShape),contentAlignment=Alignment.Center){Text(person.unread.toString(),color=Night,fontSize=10.sp)}}}
  }
