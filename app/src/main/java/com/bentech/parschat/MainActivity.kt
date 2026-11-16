@@ -37,6 +37,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.runtime.CompositionLocalProvider
 import com.bentech.parschat.ui.components.DimensionalAvatar
 import com.bentech.parschat.ui.components.ParsMessageBubble
 import com.bentech.parschat.ui.components.PersianMedallion
@@ -163,6 +166,7 @@ class MainActivity:ComponentActivity(){
  val bg=if(dark)Night else Cream
  val surface=if(dark)Color(0xFF17264A) else Color.White
  val fg=if(dark)Color(0xFFF5F0E4) else Ink
+ CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
  MaterialTheme(colorScheme=darkColorScheme(primary=Gold,secondary=Turquoise,background=bg,surface=surface,onSurface=fg)){
   when(page){
    "welcome"->Welcome{page="auth"}
