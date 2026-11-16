@@ -31,6 +31,10 @@ import com.bentech.parschat.ui.components.ParsMessageBubble
 import com.bentech.parschat.ui.components.PersianMedallion
 import com.bentech.parschat.ui.components.GoldRimCard
 import com.bentech.parschat.ui.AuthScreen
+import com.bentech.parschat.ui.UserDirectoryScreen
+import com.bentech.parschat.FirebaseChatRepository
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
@@ -43,7 +47,7 @@ private val Gold = Color(0xFFD8B45A)
 private val Turquoise = Color(0xFF55C8BC)
 private val Cream = Color(0xFFF5F1E7)
 private val Ink = Color(0xFF172344)
-private data class Person(val name:String,val last:String,val time:String,val unread:Int,val avatar:String)
+private data class Person(val name:String,val last:String,val time:String,val unread:Int,val avatar:String,val uid:String="")
 private data class Message(val body:String,val mine:Boolean,val time:String)
 private val contacts = listOf(
  Person("ماندانا","فردا برای دیدار آماده‌ای؟","۱۱:۴۲",2,"م"),
@@ -61,6 +65,8 @@ class MainActivity:ComponentActivity(){
 @Composable private fun ParsChatApp(){
  var page by remember{mutableStateOf(if(FirebaseAuth.getInstance().currentUser!=null) "home" else "welcome")}
  var selected by remember{mutableStateOf(contacts[0])}
+ var conversationId by remember{mutableStateOf<String?>(null)}
+ val context= LocalContext.current
  var dark by remember{mutableStateOf(true)}
  var name by remember{mutableStateOf(FirebaseAuth.getInstance().currentUser?.displayName ?: "کاربر")}
  LaunchedEffect(Unit){
@@ -76,13 +82,13 @@ class MainActivity:ComponentActivity(){
   when(page){
    "welcome"->Welcome{page="auth"}
    "auth"->AuthScreen(onSuccess={uid->page="home";FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name }},onBack={page="welcome"})
-   "home"->Home(bg,surface,fg,name,search,{search=it},{selected=it;page="chat"},{page="profile"},{page="settings"},{page="calls"})
-   "chat"->Chat(selected,bg,surface,fg,chats[selected.name]?: mutableListOf(),{page="home"},{page="call"}){body->
+   "home"->Home(bg,surface,fg,name,search,{search=it},{selected=it;conversationId=null;page="chat"},{page="profile"},{page="settings"},{page="calls"})
+   "chat"->Chat(selected,bg,surface,fg,conversationId,chats[selected.name]?: mutableListOf(),{page="home"},{page="call"}){body->
     val list=chats[selected.name]?: mutableListOf<Message>().also{chats[selected.name]=it}
     list.add(Message(body,true,SimpleDateFormat("HH:mm",Locale.getDefault()).format(Date())))
    }
    "call"->CallPage(selected.name){page="chat"}
-   "calls"->Page("مخاطبان","برای شروع گفتگو یک مخاطب را انتخاب کن",bg,fg,{page="home"}){contacts.forEach{PersonRow(it,surface,fg){selected=it;page="chat"}}}
+   "calls"->UserDirectoryScreen(bg,surface,fg,onBack={page="home"},onSelect={uid,displayName->FirebaseChatRepository().openConversation(uid){result->result.onSuccess{id->selected=Person(displayName,"","",0,displayName.take(1),uid);conversationId=id;page="chat"}.onFailure{error->Toast.makeText(context,error.localizedMessage ?: "گفتگو باز نشد",Toast.LENGTH_LONG).show()}}})
    "settings"->Page("تنظیمات","شخصی‌سازی تجربه پارس چت",bg,fg,{page="home"}){
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(surface).padding(16.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.DarkMode,null,tint=Gold);Text("حالت تاریک",Modifier.weight(1f).padding(start=12.dp),color=fg);Switch(dark,{dark=it})}
     Spacer(Modifier.height(16.dp));Text("درباره برنامه",color=fg,fontWeight=FontWeight.Bold);Text("PARS CHAT  •  نسخه ۱.۱.۰",color=Gold);Text("ساخته بنیامین نوری دفرازی",color=fg);Spacer(Modifier.height(24.dp));Button(onClick={FirebaseAuth.getInstance().signOut();page="welcome"},modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF8D3D45))){Text("خروج از حساب",color=Color.White)}
@@ -187,12 +193,32 @@ class MainActivity:ComponentActivity(){
  }
 }
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable private fun Chat(person:Person,bg:Color,surface:Color,fg:Color,messages:List<Message>,back:()->Unit,call:()->Unit,send:(String)->Unit){
+@Composable private fun Chat(person:Person,bg:Color,surface:Color,fg:Color,conversationId:String?,messages:List<Message>,back:()->Unit,call:()->Unit,send:(String)->Unit){
  var draft by remember{mutableStateOf("")}
- Scaffold(containerColor=bg,topBar={TopAppBar(title={Column{Text(person.name,color=fg,fontWeight=FontWeight.Bold);Text("آخرین بازدید اخیراً",color=Color.Gray,fontSize=10.sp)}},navigationIcon={IconButton(back){Icon(Icons.Default.ArrowBack,null,tint=fg)}},colors=TopAppBarDefaults.topAppBarColors(containerColor=surface))},bottomBar={Row(Modifier.fillMaxWidth().background(surface).navigationBarsPadding().padding(8.dp),verticalAlignment=Alignment.CenterVertically){IconButton({}){Icon(Icons.Default.AddCircleOutline,null,tint=Turquoise)};Row(Modifier.weight(1f).clip(RoundedCornerShape(22.dp)).background(bg).padding(horizontal=13.dp,vertical=5.dp),verticalAlignment=Alignment.CenterVertically){BasicTextField(draft,{draft=it},Modifier.weight(1f).padding(vertical=9.dp),textStyle=TextStyle(color=fg),decorationBox={inner->if(draft.isEmpty())Text("پیام بنویس...",color=Color.Gray);inner()});Icon(Icons.Default.EmojiEmotions,null,tint=Color.Gray)};IconButton({if(draft.isNotBlank()){send(draft.trim());draft=""}}){Box(Modifier.size(42.dp).background(Gold,CircleShape),contentAlignment=Alignment.Center){Icon(Icons.Default.Send,null,tint=Night)}}}}){p->
+ val repository = remember { FirebaseChatRepository() }
+ val currentUid = remember { repository.currentUserId() }
+ var liveMessages by remember(conversationId) { mutableStateOf<List<Message>?>(null) }
+ var chatError by remember(conversationId) { mutableStateOf<String?>(null) }
+ DisposableEffect(conversationId) {
+  if (conversationId == null) {
+   onDispose { }
+  } else {
+   val registration = repository.observeMessages(conversationId, onUpdate={snapshot->
+    liveMessages = snapshot?.documents.orEmpty().map { doc ->
+     val date = doc.getTimestamp("createdAt")?.toDate()
+     val time = date?.let { SimpleDateFormat("HH:mm",Locale.getDefault()).format(it) } ?: ""
+     Message(doc.getString("text").orEmpty(),doc.getString("senderId")==currentUid,time)
+    }
+   },onError={exception->chatError=exception.localizedMessage ?: "دریافت پیام‌ها انجام نشد."})
+   onDispose { registration.remove() }
+  }
+ }
+ val visibleMessages = liveMessages ?: messages
+ Scaffold(containerColor=bg,topBar={TopAppBar(title={Column{Text(person.name,color=fg,fontWeight=FontWeight.Bold);Text("آخرین بازدید اخیراً",color=Color.Gray,fontSize=10.sp)}},navigationIcon={IconButton(back){Icon(Icons.Default.ArrowBack,null,tint=fg)}},colors=TopAppBarDefaults.topAppBarColors(containerColor=surface))},bottomBar={Row(Modifier.fillMaxWidth().background(surface).navigationBarsPadding().padding(8.dp),verticalAlignment=Alignment.CenterVertically){IconButton({}){Icon(Icons.Default.AddCircleOutline,null,tint=Turquoise)};Row(Modifier.weight(1f).clip(RoundedCornerShape(22.dp)).background(bg).padding(horizontal=13.dp,vertical=5.dp),verticalAlignment=Alignment.CenterVertically){BasicTextField(draft,{draft=it},Modifier.weight(1f).padding(vertical=9.dp),textStyle=TextStyle(color=fg),decorationBox={inner->if(draft.isEmpty())Text("پیام بنویس...",color=Color.Gray);inner()});Icon(Icons.Default.EmojiEmotions,null,tint=Color.Gray)};IconButton({if(draft.isNotBlank()){val text=draft.trim();if(conversationId!=null)repository.sendText(conversationId,text){result->result.onFailure{chatError=it.localizedMessage ?: "ارسال پیام انجام نشد."}} else send(text);draft=""}}){Box(Modifier.size(42.dp).background(Gold,CircleShape),contentAlignment=Alignment.Center){Icon(Icons.Default.Send,null,tint=Night)}}}}){p->
  LazyColumn(Modifier.fillMaxSize().padding(p).padding(horizontal=13.dp),contentPadding=PaddingValues(vertical=16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
   item{Text("امروز",Modifier.fillMaxWidth(),color=Color.Gray,textAlign=TextAlign.Center,fontSize=11.sp)}
-  items(messages){m->Row(Modifier.fillMaxWidth(),horizontalArrangement=if(m.mine)Arrangement.End else Arrangement.Start){ParsMessageBubble(message=m.body,time=m.time,outgoing=m.mine,modifier=Modifier.widthIn(max=300.dp))}}
+  if(chatError!=null)item{Text(chatError!!,Modifier.fillMaxWidth(),color=Color(0xFFFFB4AB),textAlign=TextAlign.Center,fontSize=11.sp)}
+  items(visibleMessages){m->Row(Modifier.fillMaxWidth(),horizontalArrangement=if(m.mine)Arrangement.End else Arrangement.Start){ParsMessageBubble(message=m.body,time=m.time,outgoing=m.mine,modifier=Modifier.widthIn(max=300.dp))}}
  }
  }
 }
