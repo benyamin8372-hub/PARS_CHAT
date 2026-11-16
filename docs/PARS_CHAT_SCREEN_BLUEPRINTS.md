@@ -20,7 +20,7 @@ This document translates the approved visual direction into implementable screen
 4. Two clear actions: «ورود» and «ایجاد حساب».
 5. Small creator credit at the bottom.
 
-Current implementation note: the welcome screen now routes to a Firebase email/password sign-in and registration screen. The home screen has lapis/gold styling, search, unread/group filters, and empty states. The authenticated client still needs live Firestore user/conversation/message binding before sample data can be removed.
+Current implementation: the welcome screen routes to Firebase email/password sign-in and registration. The authenticated home, directory, private conversations, and groups use Firestore listeners; user profiles and media use Firebase Storage. The app root now applies Persian RTL layout direction. Source code is present, but a successful compile and device QA are still required.
 
 ### States and behavior
 - Welcome never authenticates the user or opens the conversation list by itself.
@@ -160,3 +160,25 @@ Switches must reflect persisted settings, not just transient UI state. A setting
 - [ ] Calling UI remains absent until real calling infrastructure exists.
 - [ ] Admin actions are protected by server-side authorization.
 - [ ] No APK build is run until the complete interface is implemented and explicitly approved by the owner.
+
+
+## Current implementation reality (2026-11-16)
+
+The following notes supersede earlier planning statements where they conflict:
+
+- The home screen is backed by the authenticated user's Firestore conversations; it is not intended to ship with sample contacts or local-only messages.
+- The user directory, private message timeline, group creation and group management are connected to the Firebase repository in source.
+- The profile currently supports display-name editing and profile-photo upload; username and bio fields are not implemented.
+- Settings currently include theme, online visibility, last-seen visibility, blocked users, admin entry, and sign-out. Notification preferences, app lock, two-step verification, and storage management are not implemented and must not be presented as working controls.
+- The admin screen currently shows user/conversation counts and account suspend/enable actions. A report queue and in-app audit-history viewer are not implemented.
+- The current call screen is a demonstration-only placeholder and is not a real voice/video calling service. Do not present it as working calling. Calls remain outside the approved 15-feature 1.0 scope.
+- Presence is lifecycle-based and may become stale after force-stop or abrupt process death.
+- The source has not yet passed a recorded Gradle build or on-device acceptance test.
+
+## Release blockers
+
+1. Deploy and verify Firestore rules, Storage rules, and Cloud Functions in the existing Firebase project.
+2. Provision the first administrator custom claim through the trusted Admin SDK script.
+3. Build the APK through the manual GitHub Actions workflow after design approval.
+4. Test registration, two-account private chat, group membership, block enforcement, image/audio uploads, push delivery, and admin suspension.
+5. Verify RTL, text scaling, keyboard insets, notification permission, lifecycle presence, and navigation on a physical Android device.
