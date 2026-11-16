@@ -9,6 +9,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.combinedClickable
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import coil.compose.AsyncImage
+import android.media.MediaPlayer
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -119,10 +124,7 @@ class MainActivity:ComponentActivity(){
    "welcome"->Welcome{page="auth"}
    "auth"->AuthScreen(onSuccess={uid->sessionUid=uid;page="home";FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name }},onBack={page="welcome"})
    "home"->Home(bg,surface,fg,name,search,contacts,{search=it},{selected=it;conversationId=it.conversationId;page="chat"},{page="profile"},{page="settings"},{page="calls"},{page="groupCreate"})
-   "chat"->Chat(selected,bg,surface,fg,conversationId,chats[selected.name]?: mutableListOf(),{page="home"},{page="call"}){body->
-    val list=chats[selected.name]?: mutableListOf<Message>().also{chats[selected.name]=it}
-    list.add(Message(body,true,SimpleDateFormat("HH:mm",Locale.getDefault()).format(Date())))
-   }
+   "chat"->Chat(selected,bg,surface,fg,conversationId,contacts,{page="home"})
    "call"->CallPage(selected.name){page="chat"}
    "groupCreate"->GroupCreateScreen(bg,surface,fg,onBack={page="home"},onCreated={id,groupName->selected=Person(groupName,"گروه تازه","",0,groupName.take(1),"",id,true);conversationId=id;page="chat"})
    "calls"->UserDirectoryScreen(bg,surface,fg,onBack={page="home"},onSelect={uid,displayName->FirebaseChatRepository().openConversation(uid){result->result.onSuccess{id->selected=Person(displayName,"گفتگوی تازه","",0,displayName.take(1),uid,id);conversationId=id;page="chat"}.onFailure{error->Toast.makeText(context,error.localizedMessage ?: "گفتگو باز نشد",Toast.LENGTH_LONG).show()}}})
@@ -230,34 +232,133 @@ class MainActivity:ComponentActivity(){
   Column(horizontalAlignment=Alignment.End){Text(person.time,color=Color.Gray,fontSize=10.sp);if(person.unread>0){Spacer(Modifier.height(5.dp));Box(Modifier.size(19.dp).background(Turquoise,CircleShape),contentAlignment=Alignment.Center){Text(person.unread.toString(),color=Night,fontSize=10.sp)}}}
  }
 }
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable private fun Chat(person:Person,bg:Color,surface:Color,fg:Color,conversationId:String?,messages:List<Message>,back:()->Unit,call:()->Unit,send:(String)->Unit){
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable private fun Chat(person:Person,bg:Color,surface:Color,fg:Color,conversationId:String?,allConversations:List<Person>,back:()->Unit){
  var draft by remember{mutableStateOf("")}
- val repository = remember { FirebaseChatRepository() }
- val currentUid = remember { repository.currentUserId() }
- var liveMessages by remember(conversationId) { mutableStateOf<List<Message>?>(null) }
- var chatError by remember(conversationId) { mutableStateOf<String?>(null) }
- DisposableEffect(conversationId) {
-  if (conversationId == null) {
-   onDispose { }
-  } else {
-   val registration = repository.observeMessages(conversationId, onUpdate={snapshot->
-    liveMessages = snapshot?.documents.orEmpty().map { doc ->
-     val date = doc.getTimestamp("createdAt")?.toDate()
-     val time = date?.let { SimpleDateFormat("HH:mm",Locale.getDefault()).format(it) } ?: ""
-     Message(doc.getString("text").orEmpty(),doc.getString("senderId")==currentUid,time)
-    }
-   },onError={exception->chatError=exception.localizedMessage ?: "دریافت پیام‌ها انجام نشد."})
-   onDispose { registration.remove() }
+ val repository=remember{FirebaseChatRepository()}
+ val currentUid=remember{repository.currentUserId()}
+ val context=LocalContext.current
+ var liveMessages by remember(conversationId){mutableStateOf<List<Message>>(emptyList())}
+ var chatError by remember(conversationId){mutableStateOf<String?>(null)}
+ var selectedMessage by remember{mutableStateOf<Message?>(null)}
+ var editTarget by remember{mutableStateOf<Message?>(null)}
+ var editText by remember{mutableStateOf("")}
+ var replyTarget by remember{mutableStateOf<Message?>(null)}
+ var forwardTarget by remember{mutableStateOf<Message?>(null)}
+ var blockConfirm by remember{mutableStateOf(false)}
+ var uploadBusy by remember{mutableStateOf(false)}
+ val imagePicker=rememberLauncherForActivityResult(ActivityResultContracts.GetContent()){uri->
+  if(uri!=null && conversationId!=null){
+   uploadBusy=true
+   val mime=context.contentResolver.getType(uri) ?: "image/jpeg"
+   repository.uploadMedia(conversationId,uri,mime){result->uploadBusy=false;result.onFailure{chatError=it.localizedMessage ?: "بارگذاری تصویر ناموفق بود."}}
   }
  }
- val visibleMessages = liveMessages ?: messages
- Scaffold(containerColor=bg,topBar={TopAppBar(title={Column{Text(person.name,color=fg,fontWeight=FontWeight.Bold);Text("گفتگوی خصوصی",color=Color.Gray,fontSize=10.sp)}},navigationIcon={IconButton(back){Icon(Icons.Default.ArrowBack,null,tint=fg)}},colors=TopAppBarDefaults.topAppBarColors(containerColor=surface))},bottomBar={Row(Modifier.fillMaxWidth().background(surface).navigationBarsPadding().padding(8.dp),verticalAlignment=Alignment.CenterVertically){IconButton({}){Icon(Icons.Default.AddCircleOutline,null,tint=Turquoise)};Row(Modifier.weight(1f).clip(RoundedCornerShape(22.dp)).background(bg).padding(horizontal=13.dp,vertical=5.dp),verticalAlignment=Alignment.CenterVertically){BasicTextField(draft,{draft=it},Modifier.weight(1f).padding(vertical=9.dp),textStyle=TextStyle(color=fg),decorationBox={inner->if(draft.isEmpty())Text("پیام بنویس...",color=Color.Gray);inner()});Icon(Icons.Default.EmojiEmotions,null,tint=Color.Gray)};IconButton({if(draft.isNotBlank()){val text=draft.trim();if(conversationId!=null)repository.sendText(conversationId,text){result->result.onFailure{chatError=it.localizedMessage ?: "ارسال پیام انجام نشد."}} else send(text);draft=""}}){Box(Modifier.size(42.dp).background(Gold,CircleShape),contentAlignment=Alignment.Center){Icon(Icons.Default.Send,null,tint=Night)}}}}){p->
- LazyColumn(Modifier.fillMaxSize().padding(p).padding(horizontal=13.dp),contentPadding=PaddingValues(vertical=16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
-  item{Text("امروز",Modifier.fillMaxWidth(),color=Color.Gray,textAlign=TextAlign.Center,fontSize=11.sp)}
-  if(chatError!=null)item{Text(chatError!!,Modifier.fillMaxWidth(),color=Color(0xFFFFB4AB),textAlign=TextAlign.Center,fontSize=11.sp)}
-  items(visibleMessages){m->Row(Modifier.fillMaxWidth(),horizontalArrangement=if(m.mine)Arrangement.End else Arrangement.Start){ParsMessageBubble(message=m.body,time=m.time,outgoing=m.mine,modifier=Modifier.widthIn(max=300.dp))}}
+ val audioPicker=rememberLauncherForActivityResult(ActivityResultContracts.GetContent()){uri->
+  if(uri!=null && conversationId!=null){
+   uploadBusy=true
+   val mime=context.contentResolver.getType(uri) ?: "audio/mpeg"
+   repository.uploadMedia(conversationId,uri,mime){result->uploadBusy=false;result.onFailure{chatError=it.localizedMessage ?: "بارگذاری صوت ناموفق بود."}}
+  }
  }
+ DisposableEffect(conversationId){
+  if(conversationId==null){onDispose{}}
+  else{
+   val registration=repository.observeMessages(conversationId,onUpdate={snapshot->
+    val docs=snapshot?.documents.orEmpty()
+    liveMessages=docs.map{doc->
+     val date=doc.getTimestamp("createdAt")?.toDate()
+     val time=date?.let{SimpleDateFormat("HH:mm",Locale.getDefault()).format(it)} ?: ""
+     val readBy=(doc.get("readBy") as? Map<*,*>)?.mapNotNull{(k,v)->if(k is String && v is Boolean)k to v else null}?.toMap().orEmpty()
+     Message(doc.getString("text").orEmpty(),doc.getString("senderId")==currentUid,time,doc.id,doc.getString("senderId").orEmpty(),
+      doc.getString("type") ?: "text",doc.getString("mediaUrl"),doc.getTimestamp("editedAt")!=null,doc.getBoolean("deleted")==true,readBy,
+      doc.getString("replyToId"),doc.getString("replyToText"))
+    }
+    val unread=docs.filter{it.getString("senderId")!=currentUid && (it.get("readBy") as? Map<*,*>)?.get(currentUid)!=true}.map{it.id}
+    if(unread.isNotEmpty())repository.markRead(conversationId,unread)
+   },onError={chatError=it.localizedMessage ?: "دریافت پیام‌ها ناموفق بود."})
+   onDispose{registration.remove()}
+  }
+ }
+ Scaffold(containerColor=bg,topBar={
+  TopAppBar(
+   title={Column{Text(person.name,color=fg,fontWeight=FontWeight.Bold);Text(if(person.isGroup)"گروه گفتگو" else "گفتگوی خصوصی",color=Color.Gray,fontSize=10.sp)}},
+   navigationIcon={IconButton(back){Icon(Icons.Default.ArrowBack,null,tint=fg)}},
+   actions={if(!person.isGroup && person.uid.isNotBlank())IconButton({blockConfirm=true}){Icon(Icons.Default.Block,null,tint=Color(0xFFE6A0A0))}},
+   colors=TopAppBarDefaults.topAppBarColors(containerColor=surface)
+  )
+ },bottomBar={
+  Column(Modifier.fillMaxWidth().background(surface).navigationBarsPadding()){
+   if(replyTarget!=null)Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=4.dp),verticalAlignment=Alignment.CenterVertically){
+    Column(Modifier.weight(1f)){Text("پاسخ به پیام",color=Gold,fontSize=10.sp);Text(replyTarget!!.body,color=fg,fontSize=12.sp,maxLines=1)}
+    IconButton({replyTarget=null}){Icon(Icons.Default.Close,null,tint=Color.Gray)}
+   }
+   Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically){
+    IconButton(onClick={imagePicker.launch("image/*")},enabled=!uploadBusy){Icon(Icons.Default.Image,null,tint=Turquoise)}
+    IconButton(onClick={audioPicker.launch("audio/*")},enabled=!uploadBusy){Icon(Icons.Default.Mic,null,tint=Turquoise)}
+    Row(Modifier.weight(1f).clip(RoundedCornerShape(22.dp)).background(bg).padding(horizontal=13.dp,vertical=5.dp),verticalAlignment=Alignment.CenterVertically){
+     BasicTextField(draft,{draft=it},Modifier.weight(1f).padding(vertical=9.dp),textStyle=TextStyle(color=fg),decorationBox={inner->if(draft.isEmpty())Text("پیام بنویس...",color=Color.Gray);inner()})
+     Icon(Icons.Default.EmojiEmotions,null,tint=Color.Gray)
+    }
+    IconButton(onClick={
+     val body=draft.trim()
+     if(body.isNotEmpty() && conversationId!=null){
+      repository.sendText(conversationId,body,replyTarget?.id,replyTarget?.body){result->result.onFailure{chatError=it.localizedMessage ?: "ارسال پیام ناموفق بود."}}
+      draft="";replyTarget=null
+     }
+    },enabled=draft.isNotBlank() && !uploadBusy){Box(Modifier.size(42.dp).background(Gold,CircleShape),contentAlignment=Alignment.Center){Icon(Icons.Default.Send,null,tint=Night)}}
+   }
+  }
+ }){padding->
+  LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal=13.dp),contentPadding=PaddingValues(vertical=16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
+   item{Text("امروز",Modifier.fillMaxWidth(),color=Color.Gray,textAlign=TextAlign.Center,fontSize=11.sp)}
+   if(chatError!=null)item{Text(chatError!!,Modifier.fillMaxWidth(),color=Color(0xFFFFB4AB),textAlign=TextAlign.Center,fontSize=11.sp)}
+   if(uploadBusy)item{LinearProgressIndicator(Modifier.fillMaxWidth(),color=Gold)}
+   items(liveMessages,key={it.id}){m->
+    Row(Modifier.fillMaxWidth(),horizontalArrangement=if(m.mine)Arrangement.End else Arrangement.Start){
+     Column(Modifier.widthIn(max=300.dp).combinedClickable(onClick={},onLongClick={selectedMessage=m})){
+      if(m.replyToText!=null)Text("↳ ${m.replyToText}",color=Turquoise,fontSize=10.sp,modifier=Modifier.padding(start=8.dp,bottom=3.dp))
+      when(m.type){
+       "image"->{if(m.mediaUrl!=null)AsyncImage(model=m.mediaUrl,contentDescription="تصویر پیام",modifier=Modifier.fillMaxWidth().heightIn(max=220.dp).clip(RoundedCornerShape(15.dp)))}
+       "audio"->{Row(Modifier.clip(RoundedCornerShape(16.dp)).background(surface).padding(14.dp),verticalAlignment=Alignment.CenterVertically){IconButton(onClick={
+        m.mediaUrl?.let{url->try{MediaPlayer().apply{setDataSource(url);setOnPreparedListener{player->player.start()};setOnCompletionListener{player->player.release()};prepareAsync()}}catch(e:Exception){chatError="پخش پیام صوتی ممکن نشد."}}
+       }){Icon(Icons.Default.PlayArrow,null,tint=Gold)};Text("پیام صوتی",color=fg)}}
+       else->ParsMessageBubble(message=m.body,time=m.time,outgoing=m.mine,modifier=Modifier.fillMaxWidth())
+      }
+      if(m.mine && m.type=="text")Text(if(m.readBy.keys.any{it!=currentUid})"خوانده‌شده" else "ارسال‌شده",color=if(m.readBy.keys.any{it!=currentUid})Turquoise else Color.Gray,fontSize=9.sp,modifier=Modifier.align(Alignment.End).padding(end=5.dp))
+      if(m.edited)Text("ویرایش‌شده",color=Color.Gray,fontSize=9.sp,modifier=Modifier.align(Alignment.End))
+     }
+    }
+   }
+  }
+ }
+ if(selectedMessage!=null){
+  val msg=selectedMessage!!
+  AlertDialog(onDismissRequest={selectedMessage=null},title={Text("عملیات پیام")},text={Text(msg.body.take(180))},confirmButton={
+   Row{
+    TextButton(onClick={replyTarget=msg;selectedMessage=null}){Text("پاسخ")}
+    if(msg.mine && !msg.deleted)TextButton(onClick={editTarget=msg;editText=msg.body;selectedMessage=null}){Text("ویرایش")}
+    if(msg.mine && !msg.deleted)TextButton(onClick={conversationId?.let{id->repository.deleteMessage(id,msg.id){it.onFailure{e->chatError=e.localizedMessage}}};selectedMessage=null}){Text("حذف")}
+    TextButton(onClick={forwardTarget=msg;selectedMessage=null}){Text("فوروارد")}
+   }
+  },dismissButton={TextButton(onClick={selectedMessage=null}){Text("بستن")}})
+ }
+ if(editTarget!=null){
+  AlertDialog(onDismissRequest={editTarget=null},title={Text("ویرایش پیام")},text={OutlinedTextField(editText,{editText=it},label={Text("متن پیام")})},confirmButton={
+   TextButton(onClick={conversationId?.let{id->repository.editMessage(id,editTarget!!.id,editText){it.onFailure{e->chatError=e.localizedMessage}}};editTarget=null}){Text("ذخیره")}
+  },dismissButton={TextButton(onClick={editTarget=null}){Text("انصراف")}})
+ }
+ if(forwardTarget!=null){
+  AlertDialog(onDismissRequest={forwardTarget=null},title={Text("انتخاب مقصد فوروارد")},text={
+   Column { allConversations.filter{it.conversationId!=conversationId}.take(8).forEach{target->
+    TextButton(onClick={repository.forwardMessage(target.conversationId,forwardTarget!!.body){it.onFailure{e->chatError=e.localizedMessage}};forwardTarget=null}){Text(target.name)}
+   };if(allConversations.none{it.conversationId!=conversationId})Text("گفتگوی دیگری برای فوروارد وجود ندارد.") }
+  },confirmButton={},dismissButton={TextButton(onClick={forwardTarget=null}){Text("بستن")}})
+ }
+ if(blockConfirm){
+  AlertDialog(onDismissRequest={blockConfirm=false},title={Text("مسدودسازی کاربر")},text={Text("با مسدودکردن ${person.name}، شروع گفتگو از سمت این حساب محدود می‌شود.")},confirmButton={
+   TextButton(onClick={repository.blockUser(person.uid){result->result.onSuccess{Toast.makeText(context,"کاربر مسدود شد",Toast.LENGTH_SHORT).show();back()}.onFailure{chatError=it.localizedMessage}};blockConfirm=false}){Text("مسدود کن")}
+  },dismissButton={TextButton(onClick={blockConfirm=false}){Text("انصراف")}})
  }
 }
 @Composable private fun CallPage(name:String,end:()->Unit){Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Night,Navy))),contentAlignment=Alignment.Center){Column(horizontalAlignment=Alignment.CenterHorizontally){Box(Modifier.size(126.dp).background(Brush.linearGradient(listOf(Gold,Turquoise)),CircleShape),contentAlignment=Alignment.Center){Text(name.take(1),color=Night,fontSize=52.sp,fontWeight=FontWeight.Bold)};Spacer(Modifier.height(22.dp));Text(name,color=Color.White,fontSize=28.sp,fontWeight=FontWeight.Bold);Text("تماس نمایشی",color=Gold,modifier=Modifier.padding(8.dp));Text("این نسخه هنوز به سرویس تماس واقعی متصل نیست.",color=Color.LightGray,fontSize=11.sp);Spacer(Modifier.height(60.dp));IconButton(end,Modifier.size(64.dp).background(Color(0xFFE14D5A),CircleShape)){Icon(Icons.Default.CallEnd,null,tint=Color.White)}}}}
