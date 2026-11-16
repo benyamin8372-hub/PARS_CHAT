@@ -3,8 +3,7 @@
   "private": true,
   "engines": { "node": "20" },
   "main": "index.js",
-  "scripts": { "deploy": "firebase deploy --only functions",
-    "set-admin": "node set-admin.js" },
+  "scripts": { "set-admin": "node set-admin.js" },
   "dependencies": {
     "firebase-admin": "^13.0.2",
     "firebase-functions": "^6.3.2"
