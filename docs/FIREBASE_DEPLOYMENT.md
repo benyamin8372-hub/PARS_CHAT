@@ -18,7 +18,7 @@ In Firebase Console for project `parschat-3f91f`:
 
 ## Deploy rules and functions
 
-Install Node.js 20 and Firebase CLI on a trusted computer, then run from the repository root:
+Install Node.js 20 and Firebase CLI (for example, `npm install -g firebase-tools`) on a trusted computer, then run from the repository root:
 
 ```bash
 firebase login
@@ -30,7 +30,7 @@ firebase deploy --only firestore:rules,storage,functions
 ```
 
 The deployment publishes:
-- `firestore.rules`: private conversations, groups, message mutation, receipts, blocks, device tokens, and admin-claim access.
+- `firestore.rules`: private conversations, groups, message mutation, receipts, blocks, device tokens, privacy-protected presence documents, and admin-claim access.\n- Server-only `accountStatus` records enforce suspension without exposing suspension flags in public profiles.
 - `storage.rules`: participant-only image/audio uploads with a 15 MB limit and block checks for private chats.
 - `functions/index.js`: FCM message notifications and admin-only account suspension/listing callables.
 
