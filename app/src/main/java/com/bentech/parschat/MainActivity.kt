@@ -49,22 +49,13 @@ private val Cream = Color(0xFFF5F1E7)
 private val Ink = Color(0xFF172344)
 private data class Person(val name:String,val last:String,val time:String,val unread:Int,val avatar:String,val uid:String="")
 private data class Message(val body:String,val mine:Boolean,val time:String)
-private val contacts = listOf(
- Person("ماندانا","فردا برای دیدار آماده‌ای؟","۱۱:۴۲",2,"م"),
- Person("آریا","عکس‌های تخت جمشید عالی شدند","۱۰:۱۸",0,"آ"),
- Person("کوروش","یک پیام تازه برایت دارم","دیروز",1,"ک"),
- Person("آتوسا","سپاس از همراهی‌ات 🌿","دیروز",0,"آ"),
- Person("داریوش","جلسه را ساعت پنج بگذاریم","دوشنبه",0,"د"),
- Person("رکسانا","شب بخیر ✨","یکشنبه",0,"ر"),
- Person("بهرام","بعداً تماس می‌گیرم","شنبه",0,"ب"),
- Person("شیرین","چه خبرهای خوبی!","شنبه",0,"ش")
-)
+
 class MainActivity:ComponentActivity(){
  override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);window.statusBarColor=android.graphics.Color.rgb(9,19,47);window.navigationBarColor=android.graphics.Color.rgb(9,19,47);setContent{ParsChatApp()}}
 }
 @Composable private fun ParsChatApp(){
  var page by remember{mutableStateOf(if(FirebaseAuth.getInstance().currentUser!=null) "home" else "welcome")}
- var selected by remember{mutableStateOf(contacts[0])}
+ var selected by remember{mutableStateOf(Person("","", "",0,""))}
  var conversationId by remember{mutableStateOf<String?>(null)}
  val context= LocalContext.current
  var dark by remember{mutableStateOf(true)}
@@ -74,7 +65,7 @@ class MainActivity:ComponentActivity(){
   if(uid!=null) FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name }
  }
  var search by remember{mutableStateOf("")}
- val chats=remember{mutableStateMapOf<String,MutableList<Message>>().apply{contacts.forEach{put(it.name, mutableListOf(Message("درود! خوشحالم که اینجا هستی.",false,"۱۱:۲۰"),Message(it.last,false,it.time),Message("سپاس، به‌زودی پاسخ می‌دهم.",true,"۱۱:۳۵")))}}}
+ val chats=remember{mutableStateMapOf<String,MutableList<Message>>()}
  val bg=if(dark)Night else Cream
  val surface=if(dark)Color(0xFF17264A) else Color.White
  val fg=if(dark)Color(0xFFF5F0E4) else Ink
@@ -173,8 +164,8 @@ class MainActivity:ComponentActivity(){
      Column(horizontalAlignment=Alignment.CenterHorizontally){
       PersianMedallion(diameter=76.dp,symbol=if(filter=="گروه‌ها")"𐎠" else "⌕")
       Spacer(Modifier.height(16.dp))
-      Text(when(filter){"گروه‌ها"->"هنوز گروهی ساخته نشده";"خوانده‌نشده"->"پیام خوانده‌نشده‌ای نیست";else->"نتیجه‌ای پیدا نشد"},color=fg,fontWeight=FontWeight.Bold,fontSize=16.sp)
-      Text(when(filter){"گروه‌ها"->"گروه‌های گفت‌وگو پس از ایجاد اینجا نمایش داده می‌شوند";"خوانده‌نشده"->"همه پیام‌ها بررسی شده‌اند";else->"عبارت دیگری را برای جستجو امتحان کن"},color=Color.Gray,fontSize=11.sp,textAlign=TextAlign.Center,modifier=Modifier.padding(top=7.dp))
+      Text(when(filter){"گروه‌ها"->"هنوز گروهی ساخته نشده";"خوانده‌نشده"->"پیام خوانده‌نشده‌ای نیست";else->if(search.isBlank())"هنوز گفتگویی نداری" else "نتیجه‌ای پیدا نشد"},color=fg,fontWeight=FontWeight.Bold,fontSize=16.sp)
+      Text(when(filter){"گروه‌ها"->"گروه‌های گفت‌وگو پس از ایجاد اینجا نمایش داده می‌شوند";"خوانده‌نشده"->"همه پیام‌ها بررسی شده‌اند";else->if(search.isBlank())"برای شروع، مخاطبان را از دکمه پایین پیدا کن" else "عبارت دیگری را برای جستجو امتحان کن"},color=Color.Gray,fontSize=11.sp,textAlign=TextAlign.Center,modifier=Modifier.padding(top=7.dp))
      }
     }
    }else{
