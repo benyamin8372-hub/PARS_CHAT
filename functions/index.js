@@ -18,7 +18,19 @@ exports.notifyConversationMembers = onDocumentCreated(
     if (!conversationSnap.exists) return;
     const conversation = conversationSnap.data();
     const members = Array.isArray(conversation.participants) ? conversation.participants : [];
-    const recipients = members.filter((uid) => uid !== message.senderId);
+    let recipients = members.filter((uid) => uid !== message.senderId);
+    if (!recipients.length) return;
+    if (conversation.type !== "group") {
+      const allowed = [];
+      for (const uid of recipients) {
+        const [senderBlocked, recipientBlocked] = await Promise.all([
+          db.collection("users").doc(message.senderId).collection("blocked").doc(uid).get(),
+          db.collection("users").doc(uid).collection("blocked").doc(message.senderId).get()
+        ]);
+        if (!senderBlocked.exists && !recipientBlocked.exists) allowed.push(uid);
+      }
+      recipients = allowed;
+    }
     if (!recipients.length) return;
 
     const senderSnap = await db.collection("users").doc(message.senderId).get();
