@@ -44,6 +44,7 @@ fun UserDirectoryScreen(
     val repository = remember { FirebaseChatRepository() }
     val currentUid = remember { repository.currentUserId() }
     var users by remember { mutableStateOf<List<DirectoryEntry>>(emptyList()) }
+    var blockedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var search by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -54,6 +55,7 @@ fun UserDirectoryScreen(
             error = "برای دیدن مخاطبان ابتدا وارد حساب شو."
             onDispose { }
         } else {
+            val blockedRegistration = repository.observeBlocked(onUpdate = { snapshot -> blockedIds = snapshot?.documents.orEmpty().map { it.id }.toSet() }, onError = { })
             val registration = try {
                 repository.observeUsers(
                     onUpdate = { snapshot ->
@@ -89,11 +91,11 @@ fun UserDirectoryScreen(
                 error = exception.localizedMessage ?: "اتصال به فهرست مخاطبان برقرار نشد."
                 null
             }
-            onDispose { registration?.remove() }
+            onDispose { registration?.remove(); blockedRegistration.remove() }
         }
     }
 
-    val filtered = users.filter { it.name.contains(search.trim(), ignoreCase = true) }
+    val filtered = users.filter { it.uid !in blockedIds && it.name.contains(search.trim(), ignoreCase = true) }
 
     Column(Modifier.fillMaxSize().background(background).statusBarsPadding().navigationBarsPadding().padding(horizontal = 16.dp)) {
         Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
