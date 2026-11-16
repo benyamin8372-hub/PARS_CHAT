@@ -26,6 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bentech.parschat.ui.components.DimensionalAvatar
+import com.bentech.parschat.ui.components.ParsMessageBubble
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -107,7 +109,7 @@ class MainActivity:ComponentActivity(){
 }
 @Composable private fun PersonRow(person:Person,surface:Color,fg:Color,onClick:()->Unit){
  Row(Modifier.fillMaxWidth().shadow(2.dp,RoundedCornerShape(18.dp)).clip(RoundedCornerShape(18.dp)).background(surface).clickable(onClick=onClick).padding(13.dp),verticalAlignment=Alignment.CenterVertically){
-  Box(Modifier.size(50.dp).background(Brush.linearGradient(listOf(Gold,Turquoise)),CircleShape),contentAlignment=Alignment.Center){Text(person.avatar,color=Night,fontSize=22.sp,fontWeight=FontWeight.Bold)}
+  DimensionalAvatar(label=person.avatar,diameter=50.dp,online=person.name=="ماندانا")
   Column(Modifier.weight(1f).padding(start=12.dp)){Text(person.name,color=fg,fontWeight=FontWeight.Bold);Text(person.last,color=Color.Gray,fontSize=12.sp,maxLines=1)}
   Column(horizontalAlignment=Alignment.End){Text(person.time,color=Color.Gray,fontSize=10.sp);if(person.unread>0){Spacer(Modifier.height(5.dp));Box(Modifier.size(19.dp).background(Turquoise,CircleShape),contentAlignment=Alignment.Center){Text(person.unread.toString(),color=Night,fontSize=10.sp)}}}
  }
@@ -118,7 +120,7 @@ class MainActivity:ComponentActivity(){
  Scaffold(containerColor=bg,topBar={TopAppBar(title={Column{Text(person.name,color=fg,fontWeight=FontWeight.Bold);Text("آخرین بازدید اخیراً",color=Color.Gray,fontSize=10.sp)}},navigationIcon={IconButton(back){Icon(Icons.Default.ArrowBack,null,tint=fg)}},actions={IconButton(call){Icon(Icons.Default.Videocam,null,tint=Gold)};IconButton(call){Icon(Icons.Default.Call,null,tint=Gold)}},colors=TopAppBarDefaults.topAppBarColors(containerColor=surface))},bottomBar={Row(Modifier.fillMaxWidth().background(surface).navigationBarsPadding().padding(8.dp),verticalAlignment=Alignment.CenterVertically){IconButton({}){Icon(Icons.Default.AddCircleOutline,null,tint=Turquoise)};Row(Modifier.weight(1f).clip(RoundedCornerShape(22.dp)).background(bg).padding(horizontal=13.dp,vertical=5.dp),verticalAlignment=Alignment.CenterVertically){BasicTextField(draft,{draft=it},Modifier.weight(1f).padding(vertical=9.dp),textStyle=TextStyle(color=fg),decorationBox={inner->if(draft.isEmpty())Text("پیام بنویس...",color=Color.Gray);inner()});Icon(Icons.Default.EmojiEmotions,null,tint=Color.Gray)};IconButton({if(draft.isNotBlank()){send(draft.trim());draft=""}}){Box(Modifier.size(42.dp).background(Gold,CircleShape),contentAlignment=Alignment.Center){Icon(Icons.Default.Send,null,tint=Night)}}}}){p->
  LazyColumn(Modifier.fillMaxSize().padding(p).padding(horizontal=13.dp),contentPadding=PaddingValues(vertical=16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
   item{Text("امروز",Modifier.fillMaxWidth(),color=Color.Gray,textAlign=TextAlign.Center,fontSize=11.sp)}
-  items(messages){m->Row(Modifier.fillMaxWidth(),horizontalArrangement=if(m.mine)Arrangement.End else Arrangement.Start){Column(Modifier.widthIn(max=300.dp).clip(RoundedCornerShape(16.dp)).background(if(m.mine)Brush.linearGradient(listOf(Color(0xFF315A78),Color(0xFF1C4260))) else Brush.linearGradient(listOf(surface,surface))).padding(13.dp)){Text(m.body,color=if(m.mine)Color.White else fg,fontSize=14.sp);Text(m.time,Modifier.align(Alignment.End).padding(top=5.dp),color=Color.LightGray,fontSize=9.sp)}}}
+  items(messages){m->Row(Modifier.fillMaxWidth(),horizontalArrangement=if(m.mine)Arrangement.End else Arrangement.Start){ParsMessageBubble(message=m.body,time=m.time,outgoing=m.mine,modifier=Modifier.widthIn(max=300.dp))}}
  }
  }
 }
