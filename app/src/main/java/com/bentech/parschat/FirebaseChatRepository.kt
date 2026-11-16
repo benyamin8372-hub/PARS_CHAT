@@ -9,11 +9,14 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageMetadata
+import java.util.Date
 
 /**
  * Authenticated Firestore/Storage data access for PARS CHAT.
  * Publish firestore.rules and storage.rules before enabling these operations.
  */
+data class UserPresence(val online: Boolean, val lastSeen: Date?)
+
 class FirebaseChatRepository(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
@@ -31,8 +34,8 @@ class FirebaseChatRepository(
             .addOnSuccessListener { result ->
                 val user = result.user ?: run { onResult(Result.failure(IllegalStateException("حساب ایجاد نشد."))); return@addOnSuccessListener }
                 val profile = mapOf("uid" to user.uid, "displayName" to name, "photoUrl" to null,
-                    "createdAt" to FieldValue.serverTimestamp(), "lastSeen" to FieldValue.serverTimestamp(),
-                    "online" to true, "showOnline" to true, "showLastSeen" to true, "blockedCount" to 0)
+                    "createdAt" to FieldValue.serverTimestamp(),
+                    "showOnline" to true, "showLastSeen" to true, "blockedCount" to 0)
                 db.collection("users").document(user.uid).set(profile)
                     .addOnSuccessListener { onResult(Result.success(user.uid)) }
                     .addOnFailureListener { error -> user.delete(); onResult(Result.failure(error)) }
@@ -59,10 +62,38 @@ class FirebaseChatRepository(
 
     fun setPresence(online: Boolean, onResult: ((Result<Unit>) -> Unit)? = null) {
         val uid = currentUserId() ?: run { onResult?.invoke(Result.failure(IllegalStateException("ورود لازم است."))); return }
-        val updates = if (online) mapOf("online" to true) else mapOf("online" to false, "lastSeen" to FieldValue.serverTimestamp())
-        db.collection("users").document(uid).update(updates)
+        val presence = db.collection("users").document(uid).collection("presence")
+        val batch = db.batch()
+        batch.set(presence.document("online"), mapOf("online" to online, "updatedAt" to FieldValue.serverTimestamp()))
+        if (!online) batch.set(presence.document("lastSeen"), mapOf("lastSeen" to FieldValue.serverTimestamp()))
+        batch.commit()
             .addOnSuccessListener { onResult?.invoke(Result.success(Unit)) }
             .addOnFailureListener { onResult?.invoke(Result.failure(it)) }
+    }
+
+    fun observePresence(userId: String, onUpdate: (UserPresence) -> Unit, onError: (Exception) -> Unit): ListenerRegistration {
+        val presence = db.collection("users").document(userId).collection("presence")
+        var online = false
+        var lastSeen: Date? = null
+        var onlineReady = false
+        var lastSeenReady = false
+        val onlineListener = presence.document("online").addSnapshotListener { snapshot, error ->
+            if (error != null) onError(error) else {
+                online = snapshot?.getBoolean("online") == true
+                onlineReady = true
+                if (onlineReady && lastSeenReady) onUpdate(UserPresence(online, lastSeen))
+            }
+        }
+        val lastSeenListener = presence.document("lastSeen").addSnapshotListener { snapshot, error ->
+            if (error != null) onError(error) else {
+                lastSeen = snapshot?.getTimestamp("lastSeen")?.toDate()
+                lastSeenReady = true
+                if (onlineReady && lastSeenReady) onUpdate(UserPresence(online, lastSeen))
+            }
+        }
+        return object : ListenerRegistration {
+            override fun remove() { onlineListener.remove(); lastSeenListener.remove() }
+        }
     }
 
     fun updatePrivacy(showOnline: Boolean, showLastSeen: Boolean, onResult: (Result<Unit>) -> Unit) {
