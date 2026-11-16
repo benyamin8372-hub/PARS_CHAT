@@ -76,7 +76,7 @@ class MainActivity:ComponentActivity(){
     list.add(Message(body,true,SimpleDateFormat("HH:mm",Locale.getDefault()).format(Date())))
    }
    "call"->CallPage(selected.name){page="chat"}
-   "calls"->Page("تماس‌ها","تماس‌های اخیر",bg,fg,{page="home"}){contacts.take(4).forEach{PersonRow(it,surface,fg){selected=it;page="call"}}}
+   "calls"->Page("مخاطبان","برای شروع گفتگو یک مخاطب را انتخاب کن",bg,fg,{page="home"}){contacts.forEach{PersonRow(it,surface,fg){selected=it;page="chat"}}}
    "settings"->Page("تنظیمات","شخصی‌سازی تجربه پارس چت",bg,fg,{page="home"}){
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(surface).padding(16.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.DarkMode,null,tint=Gold);Text("حالت تاریک",Modifier.weight(1f).padding(start=12.dp),color=fg);Switch(dark,{dark=it})}
     Spacer(Modifier.height(16.dp));Text("درباره برنامه",color=fg,fontWeight=FontWeight.Bold);Text("PARS CHAT  •  نسخه ۱.۱.۰",color=Gold);Text("ساخته بنیامین نوری دفرازی",color=fg)
@@ -120,11 +120,11 @@ class MainActivity:ComponentActivity(){
  },bottomBar={
   NavigationBar(containerColor=surface,contentColor=fg){
    NavigationBarItem(selected=true,onClick={},icon={Icon(Icons.Default.ChatBubble,null)},label={Text("گفتگوها")})
-   NavigationBarItem(selected=false,onClick=onCalls,icon={Icon(Icons.Default.Call,null)},label={Text("تماس‌ها")})
+   NavigationBarItem(selected=false,onClick=onCalls,icon={Icon(Icons.Default.People,null)},label={Text("مخاطبان")})
    NavigationBarItem(selected=false,onClick=onSettings,icon={Icon(Icons.Default.Tune,null)},label={Text("تنظیمات")})
   }
  },floatingActionButton={
-  FloatingActionButton(onClick={onOpen(contacts[0])},containerColor=Gold,contentColor=Night,shape=RoundedCornerShape(18.dp)){Icon(Icons.Default.Edit,null)}
+  FloatingActionButton(onClick=onCalls,containerColor=Gold,contentColor=Night,shape=RoundedCornerShape(18.dp)){Icon(Icons.Default.Edit,null)}
  }){ padding ->
   Column(Modifier.fillMaxSize().padding(padding).padding(horizontal=16.dp)){
    Spacer(Modifier.height(18.dp))
@@ -183,7 +183,7 @@ class MainActivity:ComponentActivity(){
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable private fun Chat(person:Person,bg:Color,surface:Color,fg:Color,messages:List<Message>,back:()->Unit,call:()->Unit,send:(String)->Unit){
  var draft by remember{mutableStateOf("")}
- Scaffold(containerColor=bg,topBar={TopAppBar(title={Column{Text(person.name,color=fg,fontWeight=FontWeight.Bold);Text("آخرین بازدید اخیراً",color=Color.Gray,fontSize=10.sp)}},navigationIcon={IconButton(back){Icon(Icons.Default.ArrowBack,null,tint=fg)}},actions={IconButton(call){Icon(Icons.Default.Videocam,null,tint=Gold)};IconButton(call){Icon(Icons.Default.Call,null,tint=Gold)}},colors=TopAppBarDefaults.topAppBarColors(containerColor=surface))},bottomBar={Row(Modifier.fillMaxWidth().background(surface).navigationBarsPadding().padding(8.dp),verticalAlignment=Alignment.CenterVertically){IconButton({}){Icon(Icons.Default.AddCircleOutline,null,tint=Turquoise)};Row(Modifier.weight(1f).clip(RoundedCornerShape(22.dp)).background(bg).padding(horizontal=13.dp,vertical=5.dp),verticalAlignment=Alignment.CenterVertically){BasicTextField(draft,{draft=it},Modifier.weight(1f).padding(vertical=9.dp),textStyle=TextStyle(color=fg),decorationBox={inner->if(draft.isEmpty())Text("پیام بنویس...",color=Color.Gray);inner()});Icon(Icons.Default.EmojiEmotions,null,tint=Color.Gray)};IconButton({if(draft.isNotBlank()){send(draft.trim());draft=""}}){Box(Modifier.size(42.dp).background(Gold,CircleShape),contentAlignment=Alignment.Center){Icon(Icons.Default.Send,null,tint=Night)}}}}){p->
+ Scaffold(containerColor=bg,topBar={TopAppBar(title={Column{Text(person.name,color=fg,fontWeight=FontWeight.Bold);Text("آخرین بازدید اخیراً",color=Color.Gray,fontSize=10.sp)}},navigationIcon={IconButton(back){Icon(Icons.Default.ArrowBack,null,tint=fg)}},colors=TopAppBarDefaults.topAppBarColors(containerColor=surface))},bottomBar={Row(Modifier.fillMaxWidth().background(surface).navigationBarsPadding().padding(8.dp),verticalAlignment=Alignment.CenterVertically){IconButton({}){Icon(Icons.Default.AddCircleOutline,null,tint=Turquoise)};Row(Modifier.weight(1f).clip(RoundedCornerShape(22.dp)).background(bg).padding(horizontal=13.dp,vertical=5.dp),verticalAlignment=Alignment.CenterVertically){BasicTextField(draft,{draft=it},Modifier.weight(1f).padding(vertical=9.dp),textStyle=TextStyle(color=fg),decorationBox={inner->if(draft.isEmpty())Text("پیام بنویس...",color=Color.Gray);inner()});Icon(Icons.Default.EmojiEmotions,null,tint=Color.Gray)};IconButton({if(draft.isNotBlank()){send(draft.trim());draft=""}}){Box(Modifier.size(42.dp).background(Gold,CircleShape),contentAlignment=Alignment.Center){Icon(Icons.Default.Send,null,tint=Night)}}}}){p->
  LazyColumn(Modifier.fillMaxSize().padding(p).padding(horizontal=13.dp),contentPadding=PaddingValues(vertical=16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
   item{Text("امروز",Modifier.fillMaxWidth(),color=Color.Gray,textAlign=TextAlign.Center,fontSize=11.sp)}
   items(messages){m->Row(Modifier.fillMaxWidth(),horizontalArrangement=if(m.mine)Arrangement.End else Arrangement.Start){ParsMessageBubble(message=m.body,time=m.time,outgoing=m.mine,modifier=Modifier.widthIn(max=300.dp))}}
