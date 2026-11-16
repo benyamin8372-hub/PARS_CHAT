@@ -45,6 +45,7 @@ import com.bentech.parschat.ui.components.ParsMessageBubble
 import com.bentech.parschat.ui.components.PersianMedallion
 import com.bentech.parschat.ui.components.FaravaharChatMark
 import com.bentech.parschat.ui.components.GoldRimCard
+import com.bentech.parschat.ui.components.ParsBrandLockup
 import com.bentech.parschat.ui.AuthScreen
 import com.bentech.parschat.ui.UserDirectoryScreen
 import com.bentech.parschat.ui.GroupCreateScreen
