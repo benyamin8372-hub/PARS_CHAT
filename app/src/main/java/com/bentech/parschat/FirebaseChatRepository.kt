@@ -189,7 +189,7 @@ class FirebaseChatRepository(
             .orderBy("createdAt", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error -> if (error != null) onError(error) else onUpdate(snapshot) }
 
-    fun sendText(conversationId: String, text: String, replyToId: String? = null, replyToText: String? = null, onResult: (Result<Unit>) -> Unit) {
+    fun sendText(conversationId: String, text: String, replyToId: String? = null, replyToText: String? = null, forwardedFrom: String? = null, onResult: (Result<Unit>) -> Unit) {
         val uid = currentUserId()
         val body = text.trim()
         if (uid == null || body.isEmpty() || body.length > 4000) { onResult(Result.failure(IllegalArgumentException("متن پیام معتبر نیست."))); return }
@@ -198,6 +198,7 @@ class FirebaseChatRepository(
         val data = mutableMapOf<String, Any>("senderId" to uid, "text" to body, "createdAt" to FieldValue.serverTimestamp(),
             "type" to "text", "readBy" to mapOf(uid to true))
         if (!replyToId.isNullOrBlank()) { data["replyToId"] = replyToId; data["replyToText"] = replyToText.orEmpty().take(250) }
+        if (!forwardedFrom.isNullOrBlank()) data["forwardedFrom"] = forwardedFrom
         val batch = db.batch()
         batch.set(message, data)
         batch.update(conversation, mapOf("updatedAt" to FieldValue.serverTimestamp(), "lastMessage" to body, "lastMessageAt" to FieldValue.serverTimestamp()))
@@ -228,8 +229,8 @@ class FirebaseChatRepository(
         batch.commit().addOnSuccessListener { onResult?.invoke(Result.success(Unit)) }.addOnFailureListener { onResult?.invoke(Result.failure(it)) }
     }
 
-    fun forwardMessage(destinationConversationId: String, sourceText: String, onResult: (Result<Unit>) -> Unit) {
-        sendText(destinationConversationId, sourceText, onResult = onResult)
+    fun forwardMessage(destinationConversationId: String, sourceText: String, sourceMessageId: String, onResult: (Result<Unit>) -> Unit) {
+        sendText(destinationConversationId, sourceText, forwardedFrom = sourceMessageId, onResult = onResult)
     }
 
     fun uploadMedia(conversationId: String, uri: Uri, mimeType: String, onResult: (Result<String>) -> Unit) {
