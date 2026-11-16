@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#091326" android:pathData="M0,0h108v108h-108z" />
+    <path android:fillColor="#14264A" android:pathData="M54,7a47,47 0,1 0,0.1 0" />
+    <path android:fillColor="#00000000" android:strokeColor="#C9A45D" android:strokeWidth="1.6" android:pathData="M54,10a44,44 0,1 0,0.1 0" />
+    <!-- Faravahar: symmetrical feathered wings -->
+    <path android:fillColor="#00000000" android:strokeColor="#E9D29B" android:strokeWidth="2.5" android:strokeLineCap="round" android:pathData="M48,43L17,29 M48,43L20,38 M48,45L24,47 M60,43L91,29 M60,43L88,38 M60,45L84,47" />
+    <path android:fillColor="#00000000" android:strokeColor="#E9D29B" android:strokeWidth="2.2" android:strokeLineCap="round" android:pathData="M49,42L14,22 M49,42L19,32 M49,45L23,42 M59,42L94,22 M59,42L89,32 M59,45L85,42" />
+    <!-- Central solar disc and human figure -->
+    <path android:fillColor="#00000000" android:strokeColor="#E9D29B" android:strokeWidth="2.4" android:pathData="M54,31c-6,0 -10,4 -10,9s4,9 10,9 10,-4 10,-9 -4,-9 -10,-9z" />
+    <path android:fillColor="#E9D29B" android:pathData="M54,35a4,4 0,1 0,0.1 0" />
+    <path android:fillColor="#00000000" android:strokeColor="#E9D29B" android:strokeWidth="2.5" android:strokeLineCap="round" android:pathData="M54,50L54,69 M54,56L44,53 M54,56L64,53" />
+    <!-- Three tail feathers -->
+    <path android:fillColor="#00000000" android:strokeColor="#E9D29B" android:strokeWidth="2.2" android:strokeLineCap="round" android:pathData="M54,68L45,83 M54,68L54,86 M54,68L63,83" />
+    <!-- Speech bubble, the contemporary chat element -->
+    <path android:fillColor="#00000000" android:strokeColor="#559B96" android:strokeWidth="2.6" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M67,65h24c3,0 5,2 5,5v12c0,3 -2,5 -5,5H79l-7,6v-6h-5c-3,0 -5,-2 -5,-5V70c0,-3 2,-5 5,-5z" />
+    <path android:fillColor="#559B96" android:pathData="M73,74a1.8,1.8 0,1 0,0.1 0 M81,74a1.8,1.8 0,1 0,0.1 0 M89,74a1.8,1.8 0,1 0,0.1 0" />
+</vector>
