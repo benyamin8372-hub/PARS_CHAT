@@ -146,11 +146,13 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text','editedAt'])
             && request.resource.data.text is string
             && request.resource.data.text.size() > 0
-            && request.resource.data.text.size() <= 4000)
+            && request.resource.data.text.size() <= 4000
+            && request.resource.data.editedAt == request.time)
           ||
           (resource.data.senderId == request.auth.uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleted','text','deletedAt'])
-            && request.resource.data.deleted == true)
+            && request.resource.data.deleted == true
+            && request.resource.data.deletedAt == request.time)
           ||
           (resource.data.senderId != request.auth.uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy'])
