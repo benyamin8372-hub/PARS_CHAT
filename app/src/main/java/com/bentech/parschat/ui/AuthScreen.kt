@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bentech.parschat.FirebaseChatRepository
+import com.bentech.parschat.ui.components.FaravaharChatMark
 import com.google.firebase.messaging.FirebaseMessaging
 
 private val AuthNight = Color(0xFF091326)
@@ -79,7 +80,10 @@ fun AuthScreen(onSuccess: (String) -> Unit, onBack: () -> Unit) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = AuthIvory) }
                 Spacer(Modifier.weight(1f))
-                Text("PARS CHAT", color = AuthGold, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    FaravaharChatMark(diameter = 34.dp)
+                    Text("چت پارس", color = AuthGold, fontWeight = FontWeight.Black, modifier = Modifier.padding(start = 8.dp))
+                }
                 Spacer(Modifier.weight(1f))
                 Spacer(Modifier.size(48.dp))
             }
