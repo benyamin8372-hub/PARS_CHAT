@@ -8,6 +8,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageMetadata
 
 /**
  * Authenticated Firestore/Storage data access for PARS CHAT.
@@ -236,7 +237,7 @@ class FirebaseChatRepository(
     fun uploadProfilePhoto(uri: Uri, onResult: (Result<String>) -> Unit) {
         val uid = currentUserId() ?: run { onResult(Result.failure(IllegalStateException("ورود لازم است."))); return }
         val ref = storage.reference.child("users/$uid/profile/avatar.jpg")
-        ref.putFile(uri).continueWithTask { task ->
+        ref.putFile(uri, StorageMetadata.Builder().setContentType("image/jpeg").build()).continueWithTask { task ->
             if (!task.isSuccessful) throw task.exception ?: IllegalStateException("بارگذاری تصویر ناموفق بود.")
             ref.downloadUrl
         }.addOnSuccessListener { download ->
@@ -254,7 +255,7 @@ class FirebaseChatRepository(
             else -> { onResult(Result.failure(IllegalArgumentException("فقط تصویر و صوت پشتیبانی می‌شود."))); return }
         }
         val ref = storage.reference.child("conversations/$conversationId/$uid/${System.currentTimeMillis()}_${safeType}")
-        ref.putFile(uri).continueWithTask { task -> if (!task.isSuccessful) throw task.exception ?: IllegalStateException("بارگذاری ناموفق"); ref.downloadUrl }
+        ref.putFile(uri, StorageMetadata.Builder().setContentType(mimeType).build()).continueWithTask { task -> if (!task.isSuccessful) throw task.exception ?: IllegalStateException("بارگذاری ناموفق"); ref.downloadUrl }
             .addOnSuccessListener { download ->
                 val message = db.collection("conversations").document(conversationId).collection("messages").document()
                 val body = if (safeType == "image") "تصویر" else "پیام صوتی"
