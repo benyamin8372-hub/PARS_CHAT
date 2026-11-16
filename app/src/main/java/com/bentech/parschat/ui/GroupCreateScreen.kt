@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bentech.parschat.FirebaseChatRepository
+import com.bentech.parschat.ui.components.FaravaharChatMark
 import com.google.firebase.firestore.QuerySnapshot
 
 private data class GroupCandidate(val uid: String, val name: String)
@@ -57,6 +58,8 @@ fun GroupCreateScreen(
     Column(Modifier.fillMaxSize().background(background).statusBarsPadding().navigationBarsPadding().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = foreground) }
+            FaravaharChatMark(diameter = 38.dp, glow = .72f)
+            Spacer(Modifier.width(10.dp))
             Text("ساخت گروه تازه", color = foreground, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         }
         OutlinedTextField(
