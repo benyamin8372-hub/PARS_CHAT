@@ -31,6 +31,13 @@ service cloud.firestore {
         allow delete: if signedIn() && request.auth.uid == userId;
         allow update: if false;
       }
+
+      match /devices/{tokenId} {
+        allow read, delete: if signedIn() && request.auth.uid == userId;
+        allow create, update: if signedIn() && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['token','updatedAt'])
+          && request.resource.data.token == tokenId;
+      }
     }
 
     match /conversations/{conversationId} {
