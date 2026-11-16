@@ -94,7 +94,7 @@ fun AdminPanelScreen(background: Color, surface: Color, foreground: Color, onBac
                                 Text(user.uid.take(12) + "…", color = Color.Gray, fontSize = 10.sp)
                             }
                             TextButton(onClick = {
-                                val shouldDisable = !user.disabled
+                                val shouldDisable = user.uid !in disabled
                                 FirebaseFunctions.getInstance("europe-west1")
                                     .getHttpsCallable("setUserDisabled")
                                     .call(mapOf("uid" to user.uid, "disabled" to shouldDisable))
@@ -102,7 +102,7 @@ fun AdminPanelScreen(background: Color, surface: Color, foreground: Color, onBac
                                         disabled = if (shouldDisable) disabled + user.uid else disabled - user.uid
                                     }
                                     .addOnFailureListener { error = it.localizedMessage ?: "عملیات مدیریتی ناموفق بود." }
-                            }) { Text(if (user.disabled) "فعال‌سازی" else "تعلیق", color = if (user.disabled) Color(0xFF6CC8A5) else Color(0xFFE6A0A0)) }
+                            }) { Text(if (user.uid in disabled) "فعال‌سازی" else "تعلیق", color = if (user.uid in disabled) Color(0xFF6CC8A5) else Color(0xFFE6A0A0)) }
                         }
                     }
                 }
