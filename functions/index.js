@@ -35,8 +35,8 @@ exports.notifyConversationMembers = onDocumentCreated(
 
     const activeRecipients = [];
     for (const uid of recipients) {
-      const profile = await db.collection("users").doc(uid).get();
-      if (profile.exists && profile.data().suspended !== true) activeRecipients.push(uid);
+      const accountStatus = await db.collection("accountStatus").doc(uid).get();
+      if (!accountStatus.exists || accountStatus.data().suspended !== true) activeRecipients.push(uid);
     }
     recipients = activeRecipients;
     if (!recipients.length) return;
@@ -107,6 +107,10 @@ exports.setUserDisabled = onCall({ region: "europe-west1" }, async (request) => 
 exports.listAdminUsers = onCall({ region: "europe-west1" }, async (request) => {
   if (!request.auth || request.auth.token.admin !== true) {
     throw new HttpsError("permission-denied", "مدیر مجاز نیست.");
+  }
+  const adminStatus = await db.collection("accountStatus").doc(request.auth.uid).get();
+  if (adminStatus.exists && adminStatus.data().suspended === true) {
+    throw new HttpsError("permission-denied", "دسترسی این حساب غیرفعال شده است.");
   }
   const result = await getAuth().listUsers(1000);
   return {
