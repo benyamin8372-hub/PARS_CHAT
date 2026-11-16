@@ -76,6 +76,8 @@ class MainActivity:ComponentActivity(){
  var page by remember{mutableStateOf(if(FirebaseAuth.getInstance().currentUser!=null) "home" else "welcome")}
  var selected by remember{mutableStateOf(Person("","", "",0,""))}
  var contacts by remember{mutableStateOf<List<Person>>(emptyList())}
+ var conversationsLoading by remember{mutableStateOf(FirebaseAuth.getInstance().currentUser!=null)}
+ var conversationsError by remember{mutableStateOf<String?>(null)}
  var blockedIds by remember{mutableStateOf<Set<String>>(emptySet())}
  var sessionUid by remember{mutableStateOf(FirebaseAuth.getInstance().currentUser?.uid)}
  val repository = remember { FirebaseChatRepository() }
@@ -105,10 +107,12 @@ class MainActivity:ComponentActivity(){
  DisposableEffect(sessionUid){
   val uid=sessionUid
   if(uid==null){
-   contacts=emptyList()
+   contacts=emptyList();conversationsLoading=false;conversationsError=null
    onDispose { }
   }else{
+   conversationsLoading=true
    val registration=repository.observeConversations(onUpdate={snapshot->
+    conversationsLoading=false;conversationsError=null
     contacts=emptyList()
     val documents=snapshot?.documents.orEmpty()
     documents.forEach { conversation ->
@@ -131,7 +135,7 @@ class MainActivity:ComponentActivity(){
       }
      }
     }
-   },onError={})
+   },onError={exception->conversationsLoading=false;conversationsError=exception.localizedMessage ?: "دریافت گفتگوها ناموفق بود."})
    onDispose { registration.remove() }
   }
  }
@@ -162,7 +166,7 @@ class MainActivity:ComponentActivity(){
   when(page){
    "welcome"->Welcome{page="auth"}
    "auth"->AuthScreen(onSuccess={uid->sessionUid=uid;page="home";FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name }},onBack={page="welcome"})
-   "home"->Home(bg,surface,fg,name,search,contacts.filter{it.isGroup || it.uid !in blockedIds},{search=it},{selected=it;conversationId=it.conversationId;page="chat"},{page="profile"},{page="settings"},{page="calls"},{page="groupCreate"})
+   "home"->Home(bg,surface,fg,name,search,contacts.filter{it.isGroup || it.uid !in blockedIds},conversationsLoading,conversationsError,{search=it},{selected=it;conversationId=it.conversationId;page="chat"},{page="profile"},{page="settings"},{page="calls"},{page="groupCreate"})
    "chat"->Chat(selected,bg,surface,fg,conversationId,contacts,{page="home"},{page="groupManage"})
    "call"->CallPage(selected.name){page="chat"}
    "groupManage"->GroupManagementScreen(selected.conversationId,bg,surface,fg){page="chat"}
@@ -201,7 +205,7 @@ class MainActivity:ComponentActivity(){
   }
  }
 }
-@Composable private fun Home(bg:Color,surface:Color,fg:Color,name:String,search:String,contacts:List<Person>,onSearch:(String)->Unit,onOpen:(Person)->Unit,onProfile:()->Unit,onSettings:()->Unit,onCalls:()->Unit,onCreateGroup:()->Unit){
+@Composable private fun Home(bg:Color,surface:Color,fg:Color,name:String,search:String,contacts:List<Person>,loading:Boolean,error:String?,onSearch:(String)->Unit,onOpen:(Person)->Unit,onProfile:()->Unit,onSettings:()->Unit,onCalls:()->Unit,onCreateGroup:()->Unit){
  var filter by remember { mutableStateOf("همه") }
  val filtered = contacts.filter { person ->
   val matchesSearch = person.name.contains(search, ignoreCase = true) || person.last.contains(search, ignoreCase = true)
@@ -258,7 +262,10 @@ class MainActivity:ComponentActivity(){
     Spacer(Modifier.weight(1f))
     Text(filtered.size.toString()+" مورد",color=Color.Gray,fontSize=11.sp)
    }
-   if(filtered.isEmpty()){
+   if(error!=null)Text(error,color=Color(0xFFFFB4AB),fontSize=11.sp,modifier=Modifier.padding(vertical=6.dp))
+   if(loading){
+    Box(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center){CircularProgressIndicator(color=Gold)}
+   }else if(filtered.isEmpty()){
     Box(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center){
      Column(horizontalAlignment=Alignment.CenterHorizontally){
       PersianMedallion(diameter=76.dp,symbol=if(filter=="گروه‌ها")"𐎠" else "⌕")
