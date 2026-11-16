@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bentech.parschat.FirebaseChatRepository
+import com.bentech.parschat.ui.components.FaravaharChatMark
 import com.google.firebase.firestore.FirebaseFirestore
 
 private data class GroupMemberRow(val uid: String, val name: String)
@@ -67,6 +68,8 @@ fun GroupManagementScreen(groupId: String, background: Color, surface: Color, fo
     Column(Modifier.fillMaxSize().background(background).statusBarsPadding().navigationBarsPadding().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = foreground) }
+            FaravaharChatMark(diameter = 38.dp, glow = .72f)
+            Spacer(Modifier.width(10.dp))
             Column {
                 Text("مدیریت گروه", color = foreground, fontSize = 21.sp)
                 Text("$groupName • ${members.size} عضو", color = Color.Gray, fontSize = 11.sp)
