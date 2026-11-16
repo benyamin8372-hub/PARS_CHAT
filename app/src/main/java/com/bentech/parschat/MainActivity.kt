@@ -42,6 +42,8 @@ import com.bentech.parschat.ui.components.GoldRimCard
 import com.bentech.parschat.ui.AuthScreen
 import com.bentech.parschat.ui.UserDirectoryScreen
 import com.bentech.parschat.ui.GroupCreateScreen
+import com.bentech.parschat.ui.AdminPanelScreen
+import com.bentech.parschat.ui.BlockedUsersScreen
 import com.bentech.parschat.FirebaseChatRepository
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
@@ -77,9 +79,11 @@ class MainActivity:ComponentActivity(){
  val context= LocalContext.current
  var dark by remember{mutableStateOf(true)}
  var name by remember{mutableStateOf(FirebaseAuth.getInstance().currentUser?.displayName ?: "کاربر")}
+ var showOnline by remember{mutableStateOf(true)}
+ var showLastSeen by remember{mutableStateOf(true)}
  LaunchedEffect(sessionUid){
   val uid=sessionUid
-  if(uid!=null) FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name }
+  if(uid!=null) FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name;showOnline=doc.getBoolean("showOnline")!=false;showLastSeen=doc.getBoolean("showLastSeen")!=false }
  }
  DisposableEffect(sessionUid){
   val uid=sessionUid
@@ -126,10 +130,20 @@ class MainActivity:ComponentActivity(){
    "home"->Home(bg,surface,fg,name,search,contacts,{search=it},{selected=it;conversationId=it.conversationId;page="chat"},{page="profile"},{page="settings"},{page="calls"},{page="groupCreate"})
    "chat"->Chat(selected,bg,surface,fg,conversationId,contacts,{page="home"})
    "call"->CallPage(selected.name){page="chat"}
+   "admin"->AdminPanelScreen(bg,surface,fg){page="settings"}
+   "blocked"->BlockedUsersScreen(bg,surface,fg){page="settings"}
    "groupCreate"->GroupCreateScreen(bg,surface,fg,onBack={page="home"},onCreated={id,groupName->selected=Person(groupName,"گروه تازه","",0,groupName.take(1),"",id,true);conversationId=id;page="chat"})
    "calls"->UserDirectoryScreen(bg,surface,fg,onBack={page="home"},onSelect={uid,displayName->FirebaseChatRepository().openConversation(uid){result->result.onSuccess{id->selected=Person(displayName,"گفتگوی تازه","",0,displayName.take(1),uid,id);conversationId=id;page="chat"}.onFailure{error->Toast.makeText(context,error.localizedMessage ?: "گفتگو باز نشد",Toast.LENGTH_LONG).show()}}})
    "settings"->Page("تنظیمات","شخصی‌سازی تجربه پارس چت",bg,fg,{page="home"}){
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(surface).padding(16.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.DarkMode,null,tint=Gold);Text("حالت تاریک",Modifier.weight(1f).padding(start=12.dp),color=fg);Switch(dark,{dark=it})}
+     Spacer(Modifier.height(10.dp))
+     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(surface).padding(14.dp),verticalAlignment=Alignment.CenterVertically){Text("نمایش وضعیت آنلاین",Modifier.weight(1f),color=fg);Switch(showOnline,{showOnline=it;repository.updatePrivacy(it,showLastSeen){result->result.onFailure{Toast.makeText(context,it.localizedMessage,Toast.LENGTH_SHORT).show()}}})}
+     Spacer(Modifier.height(8.dp))
+     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(surface).padding(14.dp),verticalAlignment=Alignment.CenterVertically){Text("نمایش آخرین بازدید",Modifier.weight(1f),color=fg);Switch(showLastSeen,{showLastSeen=it;repository.updatePrivacy(showOnline,it){result->result.onFailure{Toast.makeText(context,it.localizedMessage,Toast.LENGTH_SHORT).show()}}})}
+     Spacer(Modifier.height(8.dp))
+     OutlinedButton(onClick={page="blocked"},modifier=Modifier.fillMaxWidth()){Text("مدیریت کاربران مسدودشده")}
+     OutlinedButton(onClick={page="admin"},modifier=Modifier.fillMaxWidth()){Text("پنل مدیریت")}
+
     Spacer(Modifier.height(16.dp));Text("درباره برنامه",color=fg,fontWeight=FontWeight.Bold);Text("PARS CHAT  •  نسخه ۱.۱.۰",color=Gold);Text("ساخته بنیامین نوری دفرازی",color=fg);Spacer(Modifier.height(24.dp));Button(onClick={FirebaseAuth.getInstance().signOut();sessionUid=null;page="welcome"},modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF8D3D45))){Text("خروج از حساب",color=Color.White)}
    }
    else->Profile(name,{newName->name=newName;FirebaseAuth.getInstance().currentUser?.uid?.let{uid->FirebaseFirestore.getInstance().collection("users").document(uid).update("displayName",newName)}},bg,surface,fg){page="home"}
