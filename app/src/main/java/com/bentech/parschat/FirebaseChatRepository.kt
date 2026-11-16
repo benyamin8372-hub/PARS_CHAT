@@ -60,6 +60,13 @@ class FirebaseChatRepository(
             .addOnFailureListener { onResult?.invoke(Result.failure(it)) }
     }
 
+    fun removeDeviceToken(token: String, onResult: ((Result<Unit>) -> Unit)? = null) {
+        val uid = currentUserId() ?: run { onResult?.invoke(Result.failure(IllegalStateException("ورود لازم است."))); return }
+        db.collection("users").document(uid).collection("devices").document(token).delete()
+            .addOnSuccessListener { onResult?.invoke(Result.success(Unit)) }
+            .addOnFailureListener { onResult?.invoke(Result.failure(it)) }
+    }
+
     fun setPresence(online: Boolean, onResult: ((Result<Unit>) -> Unit)? = null) {
         val uid = currentUserId() ?: run { onResult?.invoke(Result.failure(IllegalStateException("ورود لازم است."))); return }
         val presence = db.collection("users").document(uid).collection("presence")
