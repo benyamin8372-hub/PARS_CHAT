@@ -142,6 +142,46 @@ class FirebaseChatRepository(
             .addOnSuccessListener { onResult(Result.success(ref.id)) }.addOnFailureListener { onResult(Result.failure(it)) }
     }
 
+    fun addGroupMembers(conversationId: String, memberIds: List<String>, onResult: (Result<Unit>) -> Unit) {
+        val uid = currentUserId() ?: run { onResult(Result.failure(IllegalStateException("ورود لازم است."))); return }
+        db.runTransaction { transaction ->
+            val ref = db.collection("conversations").document(conversationId)
+            val snapshot = transaction.get(ref)
+            val members = (snapshot.get("participants") as? List<*>)?.filterIsInstance<String>().orEmpty()
+            val admins = (snapshot.get("admins") as? List<*>)?.filterIsInstance<String>().orEmpty()
+            if (snapshot.getString("type") != "group" || uid !in admins) throw IllegalStateException("فقط مدیر گروه می‌تواند عضو اضافه کند.")
+            val updated = (members + memberIds).distinct()
+            if (updated.size > 50) throw IllegalArgumentException("حداکثر ۵۰ عضو مجاز است.")
+            transaction.update(ref, mapOf("participants" to updated, "updatedAt" to FieldValue.serverTimestamp()))
+        }.addOnSuccessListener { onResult(Result.success(Unit)) }.addOnFailureListener { onResult(Result.failure(it)) }
+    }
+
+    fun removeGroupMember(conversationId: String, memberId: String, onResult: (Result<Unit>) -> Unit) {
+        val uid = currentUserId() ?: run { onResult(Result.failure(IllegalStateException("ورود لازم است."))); return }
+        db.runTransaction { transaction ->
+            val ref = db.collection("conversations").document(conversationId)
+            val snapshot = transaction.get(ref)
+            val members = (snapshot.get("participants") as? List<*>)?.filterIsInstance<String>().orEmpty()
+            val admins = (snapshot.get("admins") as? List<*>)?.filterIsInstance<String>().orEmpty()
+            if (snapshot.getString("type") != "group" || uid !in admins) throw IllegalStateException("فقط مدیر گروه می‌تواند عضو حذف کند.")
+            if (memberId in admins) throw IllegalArgumentException("حذف مدیر اصلی از این صفحه مجاز نیست.")
+            transaction.update(ref, mapOf("participants" to members.filterNot { it == memberId }, "updatedAt" to FieldValue.serverTimestamp()))
+        }.addOnSuccessListener { onResult(Result.success(Unit)) }.addOnFailureListener { onResult(Result.failure(it)) }
+    }
+
+    fun renameGroup(conversationId: String, name: String, onResult: (Result<Unit>) -> Unit) {
+        val uid = currentUserId() ?: run { onResult(Result.failure(IllegalStateException("ورود لازم است."))); return }
+        val clean = name.trim()
+        if (clean.length !in 2..60) { onResult(Result.failure(IllegalArgumentException("نام گروه معتبر نیست."))); return }
+        db.collection("conversations").document(conversationId).get().addOnSuccessListener { snapshot ->
+            val admins = (snapshot.get("admins") as? List<*>)?.filterIsInstance<String>().orEmpty()
+            if (uid !in admins) { onResult(Result.failure(IllegalStateException("فقط مدیر گروه می‌تواند نام را تغییر دهد."))); return@addOnSuccessListener }
+            db.collection("conversations").document(conversationId)
+                .update(mapOf("name" to clean, "updatedAt" to FieldValue.serverTimestamp()))
+                .addOnSuccessListener { onResult(Result.success(Unit)) }.addOnFailureListener { onResult(Result.failure(it)) }
+        }.addOnFailureListener { onResult(Result.failure(it)) }
+    }
+
     fun observeConversations(onUpdate: (QuerySnapshot?) -> Unit, onError: (Exception) -> Unit): ListenerRegistration {
         val uid = currentUserId() ?: throw IllegalStateException("ورود لازم است.")
         return db.collection("conversations").whereArrayContains("participants", uid)
