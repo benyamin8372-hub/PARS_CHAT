@@ -82,10 +82,14 @@ fun UserDirectoryScreen(
                                     val status = when {
                                         online -> "آنلاین"
                                         lastSeen != null -> "آخرین بازدید: $lastSeen"
-                                        else -> "وضعیت پنهان است"
+                                        !onlineVisible && !lastSeenVisible -> "وضعیت پنهان است"
+                                        !onlineVisible -> "آخرین بازدید ثبت نشده"
+                                        else -> "آفلاین"
                                     }
                                     users = users.map { if (it.uid == uid) it.copy(status = status, online = online) else it }
-                                }, onError = { })
+                                }, onError = {
+                                    users = users.map { if (it.uid == uid) it.copy(status = "وضعیت در دسترس نیست", online = false) else it }
+                                })
                                 presenceListeners.add(listener)
                             }
                         }
