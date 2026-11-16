@@ -93,11 +93,11 @@ exports.setUserDisabled = onCall({ region: "europe-west1" }, async (request) => 
   }
   const statusRef = db.collection("accountStatus").doc(uid);
   if (disabled) {
-    await statusRef.set({ suspended: true, updatedAt: new Date() }, { merge: true });
     const targetUser = await getAuth().getUser(uid);
     if (targetUser.customClaims && targetUser.customClaims.admin === true && request.auth.token.superAdmin !== true) {
       throw new HttpsError("permission-denied", "تعلیق حساب مدیر دیگر مجاز نیست.");
     }
+    await statusRef.set({ suspended: true, updatedAt: new Date() }, { merge: true });
     await getAuth().updateUser(uid, { disabled: true });
     await getAuth().revokeRefreshTokens(uid);
   } else {
