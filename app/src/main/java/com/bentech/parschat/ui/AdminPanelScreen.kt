@@ -20,7 +20,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
 
-private data class AdminUser(val uid: String, val name: String)
+private data class AdminUser(val uid: String, val name: String, val disabled: Boolean)
 
 @Composable
 fun AdminPanelScreen(background: Color, surface: Color, foreground: Color, onBack: () -> Unit) {
@@ -40,15 +40,25 @@ fun AdminPanelScreen(background: Color, surface: Color, foreground: Color, onBac
             val isAdmin = token.claims["admin"] == true
             authorized = isAdmin
             if (!isAdmin) { loading = false; return@addOnSuccessListener }
-            val db = FirebaseFirestore.getInstance()
-            db.collection("users").get().addOnSuccessListener { userSnapshot ->
-                users = userSnapshot.documents.map { AdminUser(it.id, it.getString("displayName") ?: "کاربر") }
-                userCount = userSnapshot.size()
-                db.collection("conversations").get().addOnSuccessListener { conversations ->
-                    conversationCount = conversations.size()
-                    loading = false
+            FirebaseFunctions.getInstance("europe-west1").getHttpsCallable("listAdminUsers").call()
+                .addOnSuccessListener { callable ->
+                    val statusRows = (callable.data as? Map<*, *>)?.get("users") as? List<*> ?: emptyList<Any>()
+                    val statuses = statusRows.mapNotNull { row ->
+                        val item = row as? Map<*, *> ?: return@mapNotNull null
+                        val id = item["uid"] as? String ?: return@mapNotNull null
+                        id to (item["disabled"] as? Boolean ?: false)
+                    }.toMap()
+                    disabled = statuses.filterValues { it }.keys
+                    val db = FirebaseFirestore.getInstance()
+                    db.collection("users").get().addOnSuccessListener { userSnapshot ->
+                        users = userSnapshot.documents.map { AdminUser(it.id, it.getString("displayName") ?: "کاربر", statuses[it.id] ?: false) }
+                        userCount = userSnapshot.size()
+                        db.collection("conversations").get().addOnSuccessListener { conversations ->
+                            conversationCount = conversations.size()
+                            loading = false
+                        }.addOnFailureListener { error = it.localizedMessage; loading = false }
+                    }.addOnFailureListener { error = it.localizedMessage; loading = false }
                 }.addOnFailureListener { error = it.localizedMessage; loading = false }
-            }.addOnFailureListener { error = it.localizedMessage; loading = false }
         }.addOnFailureListener { error = it.localizedMessage; authorized = false; loading = false }
     }
 
@@ -84,7 +94,7 @@ fun AdminPanelScreen(background: Color, surface: Color, foreground: Color, onBac
                                 Text(user.uid.take(12) + "…", color = Color.Gray, fontSize = 10.sp)
                             }
                             TextButton(onClick = {
-                                val shouldDisable = user.uid !in disabled
+                                val shouldDisable = !user.disabled
                                 FirebaseFunctions.getInstance("europe-west1")
                                     .getHttpsCallable("setUserDisabled")
                                     .call(mapOf("uid" to user.uid, "disabled" to shouldDisable))
@@ -92,7 +102,7 @@ fun AdminPanelScreen(background: Color, surface: Color, foreground: Color, onBac
                                         disabled = if (shouldDisable) disabled + user.uid else disabled - user.uid
                                     }
                                     .addOnFailureListener { error = it.localizedMessage ?: "عملیات مدیریتی ناموفق بود." }
-                            }) { Text(if (user.uid in disabled) "فعال‌سازی" else "تعلیق", color = if (user.uid in disabled) Color(0xFF6CC8A5) else Color(0xFFE6A0A0)) }
+                            }) { Text(if (user.disabled) "فعال‌سازی" else "تعلیق", color = if (user.disabled) Color(0xFF6CC8A5) else Color(0xFFE6A0A0)) }
                         }
                     }
                 }
