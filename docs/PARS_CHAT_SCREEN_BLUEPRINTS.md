@@ -20,6 +20,8 @@ This document translates the approved visual direction into implementable screen
 4. Two clear actions: «ورود» and «ایجاد حساب».
 5. Small creator credit at the bottom.
 
+Current implementation note: the welcome screen now routes to a Firebase email/password sign-in and registration screen. The home screen has lapis/gold styling, search, unread/group filters, and empty states. The authenticated client still needs live Firestore user/conversation/message binding before sample data can be removed.
+
 ### States and behavior
 - Welcome never authenticates the user or opens the conversation list by itself.
 - Returning authenticated users may be routed to Chats after Firebase auth state is resolved.
