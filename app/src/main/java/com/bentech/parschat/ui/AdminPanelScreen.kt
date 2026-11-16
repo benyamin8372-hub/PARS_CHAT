@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bentech.parschat.ui.components.FaravaharChatMark
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
@@ -67,6 +68,8 @@ fun AdminPanelScreen(background: Color, surface: Color, foreground: Color, onBac
     Column(Modifier.fillMaxSize().background(background).statusBarsPadding().navigationBarsPadding().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = foreground) }
+            FaravaharChatMark(diameter = 38.dp, glow = .72f)
+            Spacer(Modifier.width(10.dp))
             Text("پنل مدیریت", color = foreground, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
             TextButton(onClick = { load() }) { Text("به‌روزرسانی", color = Color(0xFFC9A45D)) }
