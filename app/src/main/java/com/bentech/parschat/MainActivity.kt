@@ -383,8 +383,9 @@ class MainActivity:ComponentActivity(){
     IconButton(onClick={
      val body=draft.trim()
      if(body.isNotEmpty() && conversationId!=null){
-      repository.sendText(conversationId,body,replyTarget?.id,replyTarget?.body){result->result.onFailure{chatError=it.localizedMessage ?: "ارسال پیام ناموفق بود."}}
-      draft="";replyTarget=null
+      repository.sendText(conversationId,body,replyTarget?.id,replyTarget?.body){result->
+       result.onSuccess{draft="";replyTarget=null}.onFailure{chatError=it.localizedMessage ?: "ارسال پیام ناموفق بود."}
+      }
      }
     },enabled=draft.isNotBlank() && !uploadBusy){Box(Modifier.size(42.dp).background(Gold,CircleShape),contentAlignment=Alignment.Center){Icon(Icons.Default.Send,null,tint=Night)}}
    }
