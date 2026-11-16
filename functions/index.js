@@ -2,6 +2,7 @@ const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 const { getMessaging } = require("firebase-admin/messaging");
+const { getAuth } = require("firebase-admin/auth");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 
 initializeApp();
@@ -66,7 +67,7 @@ exports.setUserDisabled = onCall({ region: "europe-west1" }, async (request) => 
   if (!uid || typeof disabled !== "boolean" || uid === request.auth.uid) {
     throw new HttpsError("invalid-argument", "شناسه یا وضعیت حساب معتبر نیست.");
   }
-  await require("firebase-admin/auth").getAuth().updateUser(uid, { disabled });
+  await getAuth().updateUser(uid, { disabled });
   await db.collection("adminAudit").add({
     actorUid: request.auth.uid,
     targetUid: uid,
@@ -74,4 +75,18 @@ exports.setUserDisabled = onCall({ region: "europe-west1" }, async (request) => 
     createdAt: new Date()
   });
   return { success: true };
+});
+
+
+exports.listAdminUsers = onCall({ region: "europe-west1" }, async (request) => {
+  if (!request.auth || request.auth.token.admin !== true) {
+    throw new HttpsError("permission-denied", "مدیر مجاز نیست.");
+  }
+  const result = await getAuth().listUsers(1000);
+  return {
+    users: result.users.map((user) => ({
+      uid: user.uid,
+      disabled: user.disabled === true
+    }))
+  };
 });
