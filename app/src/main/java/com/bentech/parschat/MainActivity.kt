@@ -368,15 +368,33 @@ class MainActivity:ComponentActivity(){
   }
  }
  Scaffold(containerColor=bg,topBar={
-  TopAppBar(
-   title={Column{Text(person.name,color=fg,fontWeight=FontWeight.Bold);Text(if(person.isGroup)"گروه گفتگو" else "گفتگوی خصوصی",color=Color.Gray,fontSize=10.sp)}},
-   navigationIcon={IconButton(back){Icon(Icons.Default.ArrowBack,null,tint=fg)}},
-   actions={if(person.isGroup)IconButton(manageGroup){Icon(Icons.Default.Group,null,tint=Gold)} else if(person.uid.isNotBlank())IconButton({blockConfirm=true}){Icon(Icons.Default.Block,null,tint=Color(0xFFE6A0A0))}},
-   colors=TopAppBarDefaults.topAppBarColors(containerColor=surface)
-  )
+  Row(
+   Modifier.fillMaxWidth()
+    .background(Brush.horizontalGradient(listOf(Color(0xFF071126),Color(0xFF1B3158),Color(0xFF0A1730))))
+    .border(width=1.dp,color=Gold.copy(alpha=.28f))
+    .padding(horizontal=8.dp,vertical=10.dp),
+   verticalAlignment=Alignment.CenterVertically
+  ){
+   IconButton(back){Icon(Icons.Default.ArrowBack,null,tint=Color(0xFFF3E6C4))}
+   if(person.photoUrl!=null)AsyncImage(model=person.photoUrl,contentDescription="تصویر ${person.name}",modifier=Modifier.size(43.dp).clip(CircleShape).border(1.dp,Gold,CircleShape))
+   else DimensionalAvatar(label=person.avatar,diameter=43.dp,online=false)
+   Column(Modifier.weight(1f).padding(start=10.dp)){
+    Text(person.name,color=Color(0xFFF6EEDC),fontWeight=FontWeight.Bold,fontSize=15.sp,maxLines=1)
+    Text(if(person.isGroup)"گفتگوی گروهی" else "گفتگوی خصوصی  •  PARS CHAT",color=Turquoise,fontSize=10.sp)
+   }
+   if(person.isGroup)IconButton(manageGroup){Icon(Icons.Default.Group,null,tint=Gold)}
+   else if(person.uid.isNotBlank())IconButton({blockConfirm=true}){Icon(Icons.Default.Block,null,tint=Color(0xFFE6A0A0))}
+   IconButton({Toast.makeText(context,"تنظیمات گفتگو به‌زودی در دسترس است",Toast.LENGTH_SHORT).show()}){Icon(Icons.Default.MoreVert,null,tint=Color(0xFFF3E6C4))}
+  }
  },bottomBar={
-  Column(Modifier.fillMaxWidth().background(surface).navigationBarsPadding()){
-   if(replyTarget!=null)Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=4.dp),verticalAlignment=Alignment.CenterVertically){
+  Column(
+   Modifier.fillMaxWidth()
+    .background(Brush.verticalGradient(listOf(Color(0xFF1A2B4C),Color(0xFF0B1731))))
+    .border(width=1.dp,color=Gold.copy(alpha=.22f))
+    .navigationBarsPadding()
+  ){
+   if(recording)Text("در حال ضبط پیام صوتی… برای ارسال، توقف را بزنید",color=Color(0xFFFFB7B7),fontSize=11.sp,modifier=Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=5.dp))
+   if(replyTarget!=null)Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=4.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF263B5D)).padding(horizontal=8.dp),verticalAlignment=Alignment.CenterVertically){
     Column(Modifier.weight(1f)){Text("پاسخ به پیام",color=Gold,fontSize=10.sp);Text(replyTarget!!.body,color=fg,fontSize=12.sp,maxLines=1)}
     IconButton({replyTarget=null}){Icon(Icons.Default.Close,null,tint=Color.Gray)}
    }
@@ -384,9 +402,15 @@ class MainActivity:ComponentActivity(){
     IconButton(onClick={imagePicker.launch("image/*")},enabled=!uploadBusy){Icon(Icons.Default.Image,null,tint=Turquoise)}
     IconButton(onClick={audioPicker.launch("audio/*")},enabled=!uploadBusy){Icon(Icons.Default.AttachFile,null,tint=Turquoise)}
     IconButton(onClick={if(recording)finishRecording() else if(ContextCompat.checkSelfPermission(context,Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED)beginRecording() else microphonePermission.launch(Manifest.permission.RECORD_AUDIO)},enabled=!uploadBusy){Icon(if(recording)Icons.Default.Stop else Icons.Default.Mic,null,tint=if(recording)Color(0xFFE57373) else Turquoise)}
-    Row(Modifier.weight(1f).clip(RoundedCornerShape(22.dp)).background(bg).padding(horizontal=13.dp,vertical=5.dp),verticalAlignment=Alignment.CenterVertically){
-     BasicTextField(draft,{draft=it},Modifier.weight(1f).padding(vertical=9.dp),textStyle=TextStyle(color=fg),decorationBox={inner->if(draft.isEmpty())Text("پیام بنویس...",color=Color.Gray);inner()})
-     Icon(Icons.Default.EmojiEmotions,null,tint=Color.Gray)
+    Row(
+     Modifier.weight(1f).clip(RoundedCornerShape(22.dp))
+      .background(Color(0xFF0D1B36))
+      .border(1.dp,Gold.copy(alpha=.35f),RoundedCornerShape(22.dp))
+      .padding(horizontal=13.dp,vertical=5.dp),
+     verticalAlignment=Alignment.CenterVertically
+    ){
+     BasicTextField(draft,{draft=it},Modifier.weight(1f).padding(vertical=9.dp),textStyle=TextStyle(color=Color(0xFFF5F0E4),fontSize=14.sp),decorationBox={inner->if(draft.isEmpty())Text("پیام خود را بنویسید…",color=Color(0xFF9BAAC1),fontSize=13.sp);inner()})
+     Icon(Icons.Default.EmojiEmotions,null,tint=Color(0xFF9BAAC1))
     }
     IconButton(onClick={
      val body=draft.trim()
@@ -395,11 +419,11 @@ class MainActivity:ComponentActivity(){
        result.onSuccess{draft="";replyTarget=null}.onFailure{chatError=it.localizedMessage ?: "ارسال پیام ناموفق بود."}
       }
      }
-    },enabled=draft.isNotBlank() && !uploadBusy){Box(Modifier.size(42.dp).background(Gold,CircleShape),contentAlignment=Alignment.Center){Icon(Icons.Default.Send,null,tint=Night)}}
+    },enabled=draft.isNotBlank() && !uploadBusy){Box(Modifier.size(42.dp).shadow(6.dp,CircleShape).background(Brush.linearGradient(listOf(Color(0xFFF0D58E),Gold,Color(0xFFB88B43))),CircleShape),contentAlignment=Alignment.Center){Icon(Icons.Default.Send,null,tint=Night)}}
    }
   }
  }){padding->
-  LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal=13.dp),contentPadding=PaddingValues(vertical=16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
+  LazyColumn(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF0A1630),Color(0xFF101F3B),Color(0xFF0A142B)))).padding(padding).padding(horizontal=13.dp),contentPadding=PaddingValues(vertical=16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
    item{Text("امروز",Modifier.fillMaxWidth(),color=Color.Gray,textAlign=TextAlign.Center,fontSize=11.sp)}
    if(chatError!=null)item{Text(chatError!!,Modifier.fillMaxWidth(),color=Color(0xFFFFB4AB),textAlign=TextAlign.Center,fontSize=11.sp)}
    if(uploadBusy)item{LinearProgressIndicator(Modifier.fillMaxWidth(),color=Gold)}
