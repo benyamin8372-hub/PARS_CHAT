@@ -31,6 +31,8 @@ import com.bentech.parschat.ui.components.ParsMessageBubble
 import com.bentech.parschat.ui.components.PersianMedallion
 import com.bentech.parschat.ui.components.GoldRimCard
 import com.bentech.parschat.ui.AuthScreen
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -57,10 +59,14 @@ class MainActivity:ComponentActivity(){
  override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);window.statusBarColor=android.graphics.Color.rgb(9,19,47);window.navigationBarColor=android.graphics.Color.rgb(9,19,47);setContent{ParsChatApp()}}
 }
 @Composable private fun ParsChatApp(){
- var page by remember{mutableStateOf("welcome")}
+ var page by remember{mutableStateOf(if(FirebaseAuth.getInstance().currentUser!=null) "home" else "welcome")}
  var selected by remember{mutableStateOf(contacts[0])}
  var dark by remember{mutableStateOf(true)}
- var name by remember{mutableStateOf("بنیامین")}
+ var name by remember{mutableStateOf(FirebaseAuth.getInstance().currentUser?.displayName ?: "کاربر")}
+ LaunchedEffect(Unit){
+  val uid=FirebaseAuth.getInstance().currentUser?.uid
+  if(uid!=null) FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name }
+ }
  var search by remember{mutableStateOf("")}
  val chats=remember{mutableStateMapOf<String,MutableList<Message>>().apply{contacts.forEach{put(it.name, mutableListOf(Message("درود! خوشحالم که اینجا هستی.",false,"۱۱:۲۰"),Message(it.last,false,it.time),Message("سپاس، به‌زودی پاسخ می‌دهم.",true,"۱۱:۳۵")))}}}
  val bg=if(dark)Night else Cream
@@ -69,7 +75,7 @@ class MainActivity:ComponentActivity(){
  MaterialTheme(colorScheme=darkColorScheme(primary=Gold,secondary=Turquoise,background=bg,surface=surface,onSurface=fg)){
   when(page){
    "welcome"->Welcome{page="auth"}
-   "auth"->AuthScreen(onSuccess={page="home"},onBack={page="welcome"})
+   "auth"->AuthScreen(onSuccess={uid->page="home";FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name }},onBack={page="welcome"})
    "home"->Home(bg,surface,fg,name,search,{search=it},{selected=it;page="chat"},{page="profile"},{page="settings"},{page="calls"})
    "chat"->Chat(selected,bg,surface,fg,chats[selected.name]?: mutableListOf(),{page="home"},{page="call"}){body->
     val list=chats[selected.name]?: mutableListOf<Message>().also{chats[selected.name]=it}
@@ -79,9 +85,9 @@ class MainActivity:ComponentActivity(){
    "calls"->Page("مخاطبان","برای شروع گفتگو یک مخاطب را انتخاب کن",bg,fg,{page="home"}){contacts.forEach{PersonRow(it,surface,fg){selected=it;page="chat"}}}
    "settings"->Page("تنظیمات","شخصی‌سازی تجربه پارس چت",bg,fg,{page="home"}){
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(surface).padding(16.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.DarkMode,null,tint=Gold);Text("حالت تاریک",Modifier.weight(1f).padding(start=12.dp),color=fg);Switch(dark,{dark=it})}
-    Spacer(Modifier.height(16.dp));Text("درباره برنامه",color=fg,fontWeight=FontWeight.Bold);Text("PARS CHAT  •  نسخه ۱.۱.۰",color=Gold);Text("ساخته بنیامین نوری دفرازی",color=fg)
+    Spacer(Modifier.height(16.dp));Text("درباره برنامه",color=fg,fontWeight=FontWeight.Bold);Text("PARS CHAT  •  نسخه ۱.۱.۰",color=Gold);Text("ساخته بنیامین نوری دفرازی",color=fg);Spacer(Modifier.height(24.dp));Button(onClick={FirebaseAuth.getInstance().signOut();page="welcome"},modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF8D3D45))){Text("خروج از حساب",color=Color.White)}
    }
-   else->Profile(name,{name=it},bg,surface,fg){page="home"}
+   else->Profile(name,{newName->name=newName;FirebaseAuth.getInstance().currentUser?.uid?.let{uid->FirebaseFirestore.getInstance().collection("users").document(uid).update("displayName",newName)}},bg,surface,fg){page="home"}
   }
  }
 }
