@@ -20,7 +20,7 @@ Last updated: 2026-11-16
 14. **Block users:** block/unblock screen, directory and home filtering, private-message and media-upload enforcement, and push-notification suppression for blocked private chats.
 15. **Admin panel:** custom-claim gate, user/conversation counts, admin-only account listing, suspend/enable callable, audit records, and server-only suspension enforcement in Firestore/Storage.
 
-## Firebase source/configuration included
+## Latest interface and branding pass (2026-11-16)\n\n- Added the Faravahar + speech-bubble brand mark to the welcome, authentication, home, profile/settings, user directory, group creation/management, blocked-user and admin headers.\n- Applied a global Persian right-to-left layout direction at the app root.\n- Launcher icon and app label use the PARS CHAT identity.\n- Static source checks confirmed balanced braces and expected brand imports after the RTL change. These checks are not a substitute for Kotlin/Gradle compilation.\n\n## Firebase source/configuration included
 
 - `firestore.rules`: membership, private-chat block checks, group roles, message ownership, read-receipt integrity, per-field presence privacy, device tokens, custom admin claims and suspended-account checks.
 - `storage.rules`: participant-only image/audio uploads, profile-photo access, size and MIME checks, private-chat block checks, and suspended-account checks.
