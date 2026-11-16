@@ -33,6 +33,14 @@ exports.notifyConversationMembers = onDocumentCreated(
     }
     if (!recipients.length) return;
 
+    const activeRecipients = [];
+    for (const uid of recipients) {
+      const profile = await db.collection("users").doc(uid).get();
+      if (profile.exists && profile.data().suspended !== true) activeRecipients.push(uid);
+    }
+    recipients = activeRecipients;
+    if (!recipients.length) return;
+
     const senderSnap = await db.collection("users").doc(message.senderId).get();
     const senderName = senderSnap.exists ? (senderSnap.data().displayName || "کاربر پارس چت") : "کاربر پارس چت";
     const title = conversation.type === "group" ? (conversation.name || "گروه پارس چت") : senderName;
