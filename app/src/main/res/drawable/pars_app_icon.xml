@@ -1,0 +1,47 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#091326"
+        android:pathData="M0,0h108v108h-108z" />
+    <path
+        android:fillColor="#14264A"
+        android:pathData="M8,8h92v92h-92z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#C9A45D"
+        android:strokeWidth="1.5"
+        android:pathData="M10,10h88v88h-88z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#E9D29B"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M49,39 C36,26 20,22 8,27 C18,35 27,42 39,47 C26,44 16,47 8,53 C23,56 37,54 49,50 M59,39 C72,26 88,22 100,27 C90,35 81,42 69,47 C82,44 92,47 100,53 C85,56 71,54 59,50" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#C9A45D"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M12,33L43,44 M15,39L43,47 M18,46L44,50 M96,33L65,44 M93,39L65,47 M90,46L64,50" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#E9D29B"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M54,20a5.5,5.5 0,1 0,0.1 0 M54,27L54,57 M54,34L43,41 M54,34L65,41 M54,56C48,65 43,73 36,81 M54,56L54,85 M54,56C60,65 65,73 72,81" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#55C8BC"
+        android:strokeWidth="2.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M67,62h25a4,4 0,0 1,4 4v16a4,4 0,0 1,-4 4h-10l-8,8v-8h-7a4,4 0,0 1,-4 -4v-16a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="#55C8BC"
+        android:pathData="M73,72a1.8,1.8 0,1 0,3.6 0a1.8,1.8 0,1 0,-3.6 0 M82,72a1.8,1.8 0,1 0,3.6 0a1.8,1.8 0,1 0,-3.6 0" />
+</vector>
