@@ -75,6 +75,7 @@ class MainActivity:ComponentActivity(){
  var page by remember{mutableStateOf(if(FirebaseAuth.getInstance().currentUser!=null) "home" else "welcome")}
  var selected by remember{mutableStateOf(Person("","", "",0,""))}
  var contacts by remember{mutableStateOf<List<Person>>(emptyList())}
+ var blockedIds by remember{mutableStateOf<Set<String>>(emptySet())}
  var sessionUid by remember{mutableStateOf(FirebaseAuth.getInstance().currentUser?.uid)}
  val repository = remember { FirebaseChatRepository() }
  var conversationId by remember{mutableStateOf<String?>(null)}
@@ -92,6 +93,13 @@ class MainActivity:ComponentActivity(){
  LaunchedEffect(sessionUid){
   val uid=sessionUid
   if(uid!=null) FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name;photoUrl=doc.getString("photoUrl");showOnline=doc.getBoolean("showOnline")!=false;showLastSeen=doc.getBoolean("showLastSeen")!=false }
+ }
+ DisposableEffect(sessionUid){
+  if(sessionUid==null){blockedIds=emptySet();onDispose{}}
+  else{
+   val blockedListener=repository.observeBlocked(onUpdate={snapshot->blockedIds=snapshot?.documents.orEmpty().map{it.id}.toSet()},onError={})
+   onDispose{blockedListener.remove()}
+  }
  }
  DisposableEffect(sessionUid){
   val uid=sessionUid
@@ -153,7 +161,7 @@ class MainActivity:ComponentActivity(){
   when(page){
    "welcome"->Welcome{page="auth"}
    "auth"->AuthScreen(onSuccess={uid->sessionUid=uid;page="home";FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name }},onBack={page="welcome"})
-   "home"->Home(bg,surface,fg,name,search,contacts,{search=it},{selected=it;conversationId=it.conversationId;page="chat"},{page="profile"},{page="settings"},{page="calls"},{page="groupCreate"})
+   "home"->Home(bg,surface,fg,name,search,contacts.filter{it.isGroup || it.uid !in blockedIds},{search=it},{selected=it;conversationId=it.conversationId;page="chat"},{page="profile"},{page="settings"},{page="calls"},{page="groupCreate"})
    "chat"->Chat(selected,bg,surface,fg,conversationId,contacts,{page="home"},{page="groupManage"})
    "call"->CallPage(selected.name){page="chat"}
    "groupManage"->GroupManagementScreen(selected.conversationId,bg,surface,fg){page="chat"}
@@ -424,7 +432,7 @@ class MainActivity:ComponentActivity(){
  }
  if(forwardTarget!=null){
   AlertDialog(onDismissRequest={forwardTarget=null},title={Text("انتخاب مقصد فوروارد")},text={
-   Column { allConversations.filter{it.conversationId!=conversationId}.take(8).forEach{target->
+   Column { allConversations.filter{it.conversationId!=conversationId}.forEach{target->
     TextButton(onClick={repository.forwardMessage(target.conversationId,forwardTarget!!.body,forwardTarget!!.id){it.onFailure{e->chatError=e.localizedMessage}};forwardTarget=null}){Text(target.name)}
    };if(allConversations.none{it.conversationId!=conversationId})Text("گفتگوی دیگری برای فوروارد وجود ندارد.") }
   },confirmButton={},dismissButton={TextButton(onClick={forwardTarget=null}){Text("بستن")}})
