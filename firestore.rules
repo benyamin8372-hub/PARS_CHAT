@@ -17,10 +17,10 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if signedIn() && request.auth.uid == userId
         && request.resource.data.uid == userId
-        && request.resource.data.keys().hasOnly(['uid','displayName','photoUrl','createdAt','lastSeen','online','blockedCount']);
+        && request.resource.data.keys().hasOnly(['uid','displayName','photoUrl','createdAt','lastSeen','online','showOnline','showLastSeen','blockedCount']);
       allow update: if signedIn() && request.auth.uid == userId
         && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['displayName','photoUrl','lastSeen','online']);
+          .hasOnly(['displayName','photoUrl','lastSeen','online','showOnline','showLastSeen']);
       allow delete: if false;
 
       match /blocked/{blockedUid} {
