@@ -89,7 +89,7 @@ exports.setUserDisabled = onCall({ region: "europe-west1" }, async (request) => 
   }
   await getAuth().updateUser(uid, { disabled });
   if (disabled) await getAuth().revokeRefreshTokens(uid);
-  await db.collection("users").doc(uid).set({ suspended: disabled }, { merge: true });
+  await db.collection("accountStatus").doc(uid).set({ suspended: disabled, updatedAt: new Date() }, { merge: true });
   await db.collection("adminAudit").add({
     actorUid: request.auth.uid,
     targetUid: uid,
