@@ -20,9 +20,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.FirebaseFirestore
+import com.bentech.parschat.FirebaseChatRepository
 
 private val AuthNight = Color(0xFF091326)
 private val AuthGold = Color(0xFFC9A45D)
@@ -59,39 +57,14 @@ fun AuthScreen(onSuccess: (String) -> Unit, onBack: () -> Unit) {
             return
         }
         loading = true
-        val auth = FirebaseAuth.getInstance()
-        val task = if (registering) auth.createUserWithEmailAndPassword(cleanEmail, password)
-                    else auth.signInWithEmailAndPassword(cleanEmail, password)
-        task.addOnCompleteListener { result ->
-            if (!result.isSuccessful) {
-                loading = false
-                error = result.exception?.localizedMessage ?: "ورود یا ثبت‌نام انجام نشد."
-                return@addOnCompleteListener
-            }
-            val user = result.result?.user
-            if (user == null) {
-                loading = false
-                error = "حساب کاربری دریافت نشد. دوباره تلاش کن."
-                return@addOnCompleteListener
-            }
-            if (registering) {
-                val profile = hashMapOf(
-                    "uid" to user.uid,
-                    "displayName" to displayName.trim(),
-                    "email" to cleanEmail,
-                    "createdAt" to FieldValue.serverTimestamp()
-                )
-                FirebaseFirestore.getInstance().collection("users").document(user.uid)
-                    .set(profile)
-                    .addOnCompleteListener {
-                        loading = false
-                        onSuccess(user.uid)
-                    }
-            } else {
-                loading = false
-                onSuccess(user.uid)
-            }
+        val repository = FirebaseChatRepository()
+        val callback: (Result<String>) -> Unit = { result ->
+            loading = false
+            result.onSuccess { uid -> onSuccess(uid) }
+                .onFailure { failure -> error = failure.localizedMessage ?: "عملیات انجام نشد." }
         }
+        if (registering) repository.register(cleanEmail, password, displayName.trim(), callback)
+        else repository.signIn(cleanEmail, password, callback)
     }
 
     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(AuthNight, Color(0xFF14264A), Color(0xFF1D3457))))) {
