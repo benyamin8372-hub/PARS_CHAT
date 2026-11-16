@@ -2,6 +2,7 @@ const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 const { getMessaging } = require("firebase-admin/messaging");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 
 initializeApp();
 const db = getFirestore();
@@ -54,3 +55,23 @@ exports.notifyConversationMembers = onDocumentCreated(
     }
   }
 );
+
+
+exports.setUserDisabled = onCall({ region: "europe-west1" }, async (request) => {
+  if (!request.auth || request.auth.token.admin !== true) {
+    throw new HttpsError("permission-denied", "مدیر مجاز نیست.");
+  }
+  const uid = String(request.data && request.data.uid || "");
+  const disabled = request.data && request.data.disabled;
+  if (!uid || typeof disabled !== "boolean" || uid === request.auth.uid) {
+    throw new HttpsError("invalid-argument", "شناسه یا وضعیت حساب معتبر نیست.");
+  }
+  await require("firebase-admin/auth").getAuth().updateUser(uid, { disabled });
+  await db.collection("adminAudit").add({
+    actorUid: request.auth.uid,
+    targetUid: uid,
+    action: disabled ? "disable-user" : "enable-user",
+    createdAt: new Date()
+  });
+  return { success: true };
+});
