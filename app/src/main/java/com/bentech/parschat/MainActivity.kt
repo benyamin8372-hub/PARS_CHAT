@@ -11,15 +11,11 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.combinedClickable
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import coil.compose.AsyncImage
 import android.media.MediaPlayer
 import android.media.MediaRecorder
-import android.Manifest
-import android.content.pm.PackageManager
 import android.net.Uri
 import java.io.File
-import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
