@@ -194,6 +194,7 @@ class MainActivity:ComponentActivity(){
    else->Profile(name,photoUrl,{newName->name=newName;repository.updateDisplayName(newName){result->result.onFailure{Toast.makeText(context,it.localizedMessage,Toast.LENGTH_SHORT).show()}}},{uri->repository.uploadProfilePhoto(uri){result->result.onSuccess{photoUrl=it}.onFailure{Toast.makeText(context,it.localizedMessage ?: "بارگذاری عکس ناموفق بود",Toast.LENGTH_LONG).show()}}},bg,surface,fg){page="home"}
   }
  }
+ }
 }
 @Composable private fun Welcome(onGo:()->Unit){
  val inf= rememberInfiniteTransition(label="glow")
