@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bentech.parschat.FirebaseChatRepository
 import com.google.firebase.firestore.QuerySnapshot
+import com.google.firebase.firestore.FirebaseFirestore
 
 private data class BlockedEntry(val uid: String, val name: String)
 
@@ -33,10 +34,10 @@ fun BlockedUsersScreen(background: Color, surface: Color, foreground: Color, onB
                 users = entries.map { BlockedEntry(it.id, it.id) }
                 loading = false
                 entries.forEach { blocked ->
-                    FirebaseChatRepository().observeUsers(onUpdate = { profiles ->
-                        val name = profiles?.documents?.firstOrNull { it.id == blocked.id }?.getString("displayName")
+                    FirebaseFirestore.getInstance().collection("users").document(blocked.id).get().addOnSuccessListener { profile ->
+                        val name = profile.getString("displayName")
                         if (!name.isNullOrBlank()) users = users.map { if (it.uid == blocked.id) it.copy(name = name) else it }
-                    }, onError = {})
+                    }
                 }
             },
             onError = { error = it.localizedMessage; loading = false }
