@@ -27,7 +27,7 @@ class FirebaseChatRepository(
 
     fun register(email: String, password: String, displayName: String, onResult: (Result<String>) -> Unit) {
         val name = displayName.trim()
-        if (name.length < 2 || email.isBlank() || password.length < 6) {
+        if (name.length !in 2..40 || email.isBlank() || password.length < 6) {
             onResult(Result.failure(IllegalArgumentException("نام، ایمیل معتبر و گذرواژه حداقل ۶ نویسه‌ای لازم است."))); return
         }
         auth.createUserWithEmailAndPassword(email.trim(), password)
