@@ -6,9 +6,17 @@ service firebase.storage {
       return signedIn()
         && firestore.get(/databases/(default)/documents/conversations/$(conversationId)).data.participants.hasAny([request.auth.uid]);
     }
+    function canUploadToConversation(conversationId) {
+      let conversation = firestore.get(/databases/(default)/documents/conversations/$(conversationId)).data;
+      let otherUid = conversation.participants[0] == request.auth.uid
+        ? conversation.participants[1] : conversation.participants[0];
+      return conversation.type == 'group'
+        || (!firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)/blocked/$(otherUid))
+          && !firestore.exists(/databases/(default)/documents/users/$(otherUid)/blocked/$(request.auth.uid)));
+    }
     match /conversations/{conversationId}/{userId}/{fileName} {
       allow read: if isConversationMember(conversationId);
-      allow create: if isConversationMember(conversationId)
+      allow create: if isConversationMember(conversationId) && canUploadToConversation(conversationId)
         && userId == request.auth.uid
         && request.resource.size < 15 * 1024 * 1024
         && (request.resource.contentType.matches('image/.*')
