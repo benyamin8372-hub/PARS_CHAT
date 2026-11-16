@@ -2,6 +2,7 @@ package com.bentech.parschat.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -21,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -98,6 +100,74 @@ fun PersianMedallion(
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+
+/**
+ * PARS CHAT signature: a stylized Faravahar framed by a speech bubble.
+ * Drawn natively in Compose so the mark stays crisp at every screen density.
+ */
+@Composable
+fun FaravaharChatMark(
+    modifier: Modifier = Modifier,
+    diameter: Dp = 88.dp,
+    glow: Float = 1f
+) {
+    Box(
+        modifier = modifier
+            .size(diameter)
+            .shadow(16.dp, CircleShape)
+            .clip(CircleShape)
+            .background(Brush.radialGradient(listOf(Color(0xFF304A75), Lapis, Midnight)))
+            .border(1.6.dp, PaleGold.copy(alpha = .78f * glow.coerceIn(.2f, 1f)), CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(Modifier.fillMaxSize().padding(diameter * .13f)) {
+            val w = size.width
+            val h = size.height
+            val gold = PaleGold.copy(alpha = glow.coerceIn(.2f, 1f))
+            val teal = Turquoise
+            val cx = w * .49f
+            val cy = h * .43f
+            val stroke = (w * .035f).coerceAtLeast(1.2.dp.toPx())
+            // Wing roots and three ascending feather tiers.
+            drawLine(gold, androidx.compose.ui.geometry.Offset(cx - w*.08f, cy-h*.02f), androidx.compose.ui.geometry.Offset(w*.08f, cy-h*.20f), stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            drawLine(gold, androidx.compose.ui.geometry.Offset(cx + w*.08f, cy-h*.02f), androidx.compose.ui.geometry.Offset(w*.92f, cy-h*.20f), stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            for (i in 0..4) {
+                val t = i / 4f
+                val y = cy - h*(.19f - t*.025f)
+                val leftEnd = w*(.10f + t*.055f)
+                val rightEnd = w - leftEnd
+                drawLine(gold, androidx.compose.ui.geometry.Offset(cx-w*.08f, cy-h*.015f), androidx.compose.ui.geometry.Offset(leftEnd, y), stroke*.82f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                drawLine(gold, androidx.compose.ui.geometry.Offset(cx+w*.08f, cy-h*.015f), androidx.compose.ui.geometry.Offset(rightEnd, y), stroke*.82f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            }
+            // Central solar disc and the human figure's head/shoulders.
+            drawCircle(gold, radius = w*.105f, center = androidx.compose.ui.geometry.Offset(cx, cy-h*.015f), style = Stroke(stroke))
+            drawCircle(gold, radius = w*.035f, center = androidx.compose.ui.geometry.Offset(cx, cy-h*.015f))
+            drawLine(gold, androidx.compose.ui.geometry.Offset(cx, cy+h*.075f), androidx.compose.ui.geometry.Offset(cx, cy+h*.29f), stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            drawLine(gold, androidx.compose.ui.geometry.Offset(cx, cy+h*.13f), androidx.compose.ui.geometry.Offset(cx-w*.13f, cy+h*.08f), stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            drawLine(gold, androidx.compose.ui.geometry.Offset(cx, cy+h*.13f), androidx.compose.ui.geometry.Offset(cx+w*.13f, cy+h*.08f), stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            // Three tail feathers.
+            for (i in -1..1) {
+                drawLine(gold, androidx.compose.ui.geometry.Offset(cx, cy+h*.27f), androidx.compose.ui.geometry.Offset(cx+i*w*.13f, h*.91f), stroke*.9f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            }
+            // Speech-bubble outline: a modern chat cue integrated at the lower-right.
+            val bubbleLeft = w*.61f
+            val bubbleTop = h*.59f
+            val bubbleRight = w*.96f
+            val bubbleBottom = h*.86f
+            drawRoundRect(
+                color = teal,
+                topLeft = androidx.compose.ui.geometry.Offset(bubbleLeft, bubbleTop),
+                size = androidx.compose.ui.geometry.Size(bubbleRight-bubbleLeft, bubbleBottom-bubbleTop),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(w*.07f),
+                style = Stroke(width = stroke*1.15f)
+            )
+            drawLine(teal, androidx.compose.ui.geometry.Offset(w*.70f, bubbleBottom), androidx.compose.ui.geometry.Offset(w*.64f, h*.95f), stroke*1.1f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            drawLine(teal, androidx.compose.ui.geometry.Offset(w*.64f, h*.95f), androidx.compose.ui.geometry.Offset(w*.79f, bubbleBottom), stroke*1.1f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            for (i in 0..1) drawCircle(teal, radius = stroke*.72f, center = androidx.compose.ui.geometry.Offset(w*(.73f+i*.09f), h*.72f))
+        }
     }
 }
 
