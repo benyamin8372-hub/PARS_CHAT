@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import com.bentech.parschat.ui.components.DimensionalAvatar
 import com.bentech.parschat.ui.components.ParsMessageBubble
 import com.bentech.parschat.ui.components.PersianMedallion
+import com.bentech.parschat.ui.components.FaravaharChatMark
 import com.bentech.parschat.ui.components.GoldRimCard
 import com.bentech.parschat.ui.AuthScreen
 import com.bentech.parschat.ui.UserDirectoryScreen
@@ -196,7 +197,7 @@ class MainActivity:ComponentActivity(){
  Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Night,Navy,Color(0xFF263D6A))))){
   Canvas(Modifier.fillMaxSize()){val c=Offset(size.width/2,size.height*.42f);for(i in 1..5)drawCircle(Gold.copy(alpha=glow*.1f),i*52f,c,style= androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()));for(i in 0..15){val a=Math.PI*2*i/16;drawLine(Gold.copy(alpha=.12f),Offset(c.x,c.y),Offset(c.x+kotlin.math.cos(a).toFloat()*300,c.y+kotlin.math.sin(a).toFloat()*300),1.dp.toPx())}}
   Column(Modifier.fillMaxSize().padding(28.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){
-   Box(Modifier.size(148.dp).shadow(24.dp,CircleShape).background(Brush.radialGradient(listOf(Color(0xFF354D79),Night)),CircleShape).border(1.dp,Gold.copy(alpha=glow),CircleShape),contentAlignment=Alignment.Center){Text("𐎠",fontSize=82.sp,color=Gold)}
+   FaravaharChatMark(diameter=154.dp,glow=glow)
    Spacer(Modifier.height(28.dp));Text("PARS CHAT",fontSize=31.sp,color=Gold,fontWeight=FontWeight.Black,letterSpacing=4.sp)
    Text("شکوهِ گذشته، پیوندِ امروز",color=Turquoise,fontSize=16.sp,modifier=Modifier.padding(top=10.dp))
    Text("پیام‌رسانی با الهام از تمدن ایران‌زمین",color=Color(0xFFD5DCEC),fontSize=13.sp,modifier=Modifier.padding(top=12.dp))
@@ -214,7 +215,7 @@ class MainActivity:ComponentActivity(){
  }
  Scaffold(containerColor=bg,topBar={
   Row(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Night,Color(0xFF1B3155),Night))).padding(horizontal=18.dp,vertical=14.dp),verticalAlignment=Alignment.CenterVertically){
-   PersianMedallion(diameter=48.dp)
+   FaravaharChatMark(diameter=52.dp)
    Column(Modifier.weight(1f).padding(start=12.dp)){
     Text("PARS CHAT",color=Gold,fontWeight=FontWeight.Black,fontSize=18.sp,letterSpacing=2.sp)
     Text("درود، $name",color=Color(0xFFD7DFEA),fontSize=12.sp)
