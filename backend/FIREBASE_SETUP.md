@@ -1,10 +1,10 @@
 # PARS CHAT — Firebase backend foundation
 
-This repository currently contains a local/demo Android client. The Firebase backend is **not connected yet**.
+This repository currently contains a local/demo Android client. The Firebase Android configuration is supplied through the GitHub Actions secret. The client integration is being implemented in `FirebaseChatRepository.kt`; live operation still requires enabling Email/Password Authentication, creating Firestore, and publishing the rules.
 
 ## Firebase project setup (required before live messaging)
 1. Create a Firebase project in the Firebase console.
-2. Add an Android app with package name: \`com.bentech.parschat\`.
+2. Add an Android app with package name: \`com.bentech.parschaatt\`.
 3. Download \`google-services.json\` and place it at \`app/google-services.json\` locally. Do not commit this file to a public repository.
 4. Enable **Authentication → Email/Password** (phone auth can be added after configuring SMS and billing requirements).
 5. Create a Cloud Firestore database.
