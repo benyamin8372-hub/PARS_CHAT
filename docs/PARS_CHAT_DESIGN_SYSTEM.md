@@ -35,6 +35,12 @@ Core principle: ancient Iranian identity, modern product ergonomics, controlled 
 - Achaemenid-inspired geometry may appear as a subtle emblem or small divider motif, not as repeated wallpaper.
 - Keep touch targets comfortably sized and accessible.
 
+## Official brand mark
+- The primary PARS CHAT symbol combines a stylized Faravahar with a speech bubble.
+- Faravahar is the dominant historic element, rendered in pale metallic gold; the speech bubble is a secondary turquoise detail.
+- The emblem sits on a midnight-lapis circular medallion with a restrained gold rim.
+- Use the same mark on the welcome screen, home header, and Android launcher icon. Do not replace it with a generic chat glyph or an unrelated ancient character.
+
 ## Screen specifications
 
 ### 1. Welcome and authentication
