@@ -80,6 +80,8 @@ exports.setUserDisabled = onCall({ region: "europe-west1" }, async (request) => 
     throw new HttpsError("invalid-argument", "شناسه یا وضعیت حساب معتبر نیست.");
   }
   await getAuth().updateUser(uid, { disabled });
+  if (disabled) await getAuth().revokeRefreshTokens(uid);
+  await db.collection("users").doc(uid).set({ suspended: disabled }, { merge: true });
   await db.collection("adminAudit").add({
     actorUid: request.auth.uid,
     targetUid: uid,
