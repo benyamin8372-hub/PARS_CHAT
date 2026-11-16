@@ -30,7 +30,8 @@ firebase deploy --only firestore:rules,storage,functions
 ```
 
 The deployment publishes:
-- `firestore.rules`: private conversations, groups, message mutation, receipts, blocks, device tokens, privacy-protected presence documents, and admin-claim access.\n- Server-only `accountStatus` records enforce suspension without exposing suspension flags in public profiles.
+- `firestore.rules`: private conversations, groups, message mutation, receipts, blocks, device tokens, privacy-protected presence documents, and admin-claim access.
+- Server-only `accountStatus` records enforce suspension without exposing suspension flags in public profiles.
 - `storage.rules`: participant-only image/audio uploads with a 15 MB limit and block checks for private chats.
 - `functions/index.js`: FCM message notifications and admin-only account suspension/listing callables.
 
