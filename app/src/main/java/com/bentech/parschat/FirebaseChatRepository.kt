@@ -63,9 +63,9 @@ class FirebaseChatRepository(
                 val uid = result.user?.uid
                 if (uid == null) onResult(Result.failure(IllegalStateException("شناسه حساب دریافت نشد.")))
                 else {
+                    onResult(Result.success(uid))
                     db.collection("users").document(uid)
                         .update("lastSeen", FieldValue.serverTimestamp())
-                        .addOnCompleteListener { onResult(Result.success(uid)) }
                 }
             }
             .addOnFailureListener { onResult(Result.failure(it)) }
