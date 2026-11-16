@@ -3,6 +3,8 @@ package com.bentech.parschat
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import android.content.Intent
+import android.app.PendingIntent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.google.firebase.auth.FirebaseAuth
@@ -31,8 +33,10 @@ class ParsMessagingService : FirebaseMessagingService() {
         createMessageChannel()
         val title = message.notification?.title ?: "PARS CHAT"
         val body = message.notification?.body ?: "پیام تازه‌ای دریافت شد."
+        val openApp = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.sym_action_chat)
+            .setContentIntent(openApp)
             .setContentTitle(title)
             .setContentText(body)
             .setAutoCancel(true)
