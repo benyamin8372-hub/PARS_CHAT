@@ -20,7 +20,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
 
-private data class AdminUser(val uid: String, val name: String)
+private data class AdminUser(val uid: String, val name: String, val isAdmin: Boolean)
 
 @Composable
 fun AdminPanelScreen(background: Color, surface: Color, foreground: Color, onBack: () -> Unit) {
@@ -46,12 +46,12 @@ fun AdminPanelScreen(background: Color, surface: Color, foreground: Color, onBac
                     val statuses = statusRows.mapNotNull { row ->
                         val item = row as? Map<*, *> ?: return@mapNotNull null
                         val id = item["uid"] as? String ?: return@mapNotNull null
-                        id to (item["disabled"] as? Boolean ?: false)
+                        id to Pair(item["disabled"] as? Boolean ?: false, item["isAdmin"] as? Boolean ?: false)
                     }.toMap()
-                    disabled = statuses.filterValues { it }.keys
+                    disabled = statuses.filterValues { it.first }.keys
                     val db = FirebaseFirestore.getInstance()
                     db.collection("users").get().addOnSuccessListener { userSnapshot ->
-                        users = userSnapshot.documents.map { AdminUser(it.id, it.getString("displayName") ?: "کاربر") }
+                        users = userSnapshot.documents.map { AdminUser(it.id, it.getString("displayName") ?: "کاربر", statuses[it.id]?.second == true) }
                         userCount = userSnapshot.size()
                         db.collection("conversations").get().addOnSuccessListener { conversations ->
                             conversationCount = conversations.size()
@@ -93,16 +93,20 @@ fun AdminPanelScreen(background: Color, surface: Color, foreground: Color, onBac
                                 Text(user.name, color = foreground, fontWeight = FontWeight.SemiBold)
                                 Text(user.uid.take(12) + "…", color = Color.Gray, fontSize = 10.sp)
                             }
-                            TextButton(onClick = {
-                                val shouldDisable = user.uid !in disabled
-                                FirebaseFunctions.getInstance("europe-west1")
-                                    .getHttpsCallable("setUserDisabled")
-                                    .call(mapOf("uid" to user.uid, "disabled" to shouldDisable))
-                                    .addOnSuccessListener {
-                                        disabled = if (shouldDisable) disabled + user.uid else disabled - user.uid
-                                    }
-                                    .addOnFailureListener { error = it.localizedMessage ?: "عملیات مدیریتی ناموفق بود." }
-                            }) { Text(if (user.uid in disabled) "فعال‌سازی" else "تعلیق", color = if (user.uid in disabled) Color(0xFF6CC8A5) else Color(0xFFE6A0A0)) }
+                            if (user.isAdmin) {
+                                Text("مدیر", color = Color(0xFFC9A45D), fontSize = 11.sp)
+                            } else {
+                                TextButton(onClick = {
+                                    val shouldDisable = user.uid !in disabled
+                                    FirebaseFunctions.getInstance("europe-west1")
+                                        .getHttpsCallable("setUserDisabled")
+                                        .call(mapOf("uid" to user.uid, "disabled" to shouldDisable))
+                                        .addOnSuccessListener {
+                                            disabled = if (shouldDisable) disabled + user.uid else disabled - user.uid
+                                        }
+                                        .addOnFailureListener { error = it.localizedMessage ?: "عملیات مدیریتی ناموفق بود." }
+                                }) { Text(if (user.uid in disabled) "فعال‌سازی" else "تعلیق", color = if (user.uid in disabled) Color(0xFF6CC8A5) else Color(0xFFE6A0A0)) }
+                            }
                         }
                     }
                 }
