@@ -11,6 +11,12 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/users/$(request.auth.uid)/blocked/$(otherUid))
         || exists(/databases/$(database)/documents/users/$(otherUid)/blocked/$(request.auth.uid));
     }
+    function canSendToConversation(conversationId) {
+      let conversation = get(/databases/$(database)/documents/conversations/$(conversationId)).data;
+      return conversation.type == 'group'
+        || !blockedEitherWay(conversation.participants[0] == request.auth.uid
+          ? conversation.participants[1] : conversation.participants[0]);
+    }
     function admin() { return signedIn() && request.auth.token.admin == true; }
 
     match /users/{userId} {
@@ -72,7 +78,7 @@ service cloud.firestore {
 
       match /messages/{messageId} {
         allow read: if member(conversationId);
-        allow create: if member(conversationId)
+        allow create: if member(conversationId) && canSendToConversation(conversationId)
           && request.resource.data.senderId == request.auth.uid
           && request.resource.data.type in ['text','image','audio']
           && request.resource.data.createdAt == request.time
