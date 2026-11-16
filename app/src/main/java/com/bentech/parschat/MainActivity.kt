@@ -30,6 +30,7 @@ import com.bentech.parschat.ui.components.DimensionalAvatar
 import com.bentech.parschat.ui.components.ParsMessageBubble
 import com.bentech.parschat.ui.components.PersianMedallion
 import com.bentech.parschat.ui.components.GoldRimCard
+import com.bentech.parschat.ui.AuthScreen
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -67,7 +68,8 @@ class MainActivity:ComponentActivity(){
  val fg=if(dark)Color(0xFFF5F0E4) else Ink
  MaterialTheme(colorScheme=darkColorScheme(primary=Gold,secondary=Turquoise,background=bg,surface=surface,onSurface=fg)){
   when(page){
-   "welcome"->Welcome{page="home"}
+   "welcome"->Welcome{page="auth"}
+   "auth"->AuthScreen(onSuccess={page="home"},onBack={page="welcome"})
    "home"->Home(bg,surface,fg,name,search,{search=it},{selected=it;page="chat"},{page="profile"},{page="settings"},{page="calls"})
    "chat"->Chat(selected,bg,surface,fg,chats[selected.name]?: mutableListOf(),{page="home"},{page="call"}){body->
     val list=chats[selected.name]?: mutableListOf<Message>().also{chats[selected.name]=it}
