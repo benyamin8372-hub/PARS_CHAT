@@ -56,26 +56,37 @@ fun UserDirectoryScreen(
             onDispose { }
         } else {
             val blockedRegistration = repository.observeBlocked(onUpdate = { snapshot -> blockedIds = snapshot?.documents.orEmpty().map { it.id }.toSet() }, onError = { })
+            val presenceListeners = mutableListOf<com.google.firebase.firestore.ListenerRegistration>()
             val registration = try {
                 repository.observeUsers(
                     onUpdate = { snapshot ->
-                        users = snapshot?.documents.orEmpty().mapNotNull { doc ->
+                        presenceListeners.forEach { it.remove() }
+                        presenceListeners.clear()
+                        val profiles = snapshot?.documents.orEmpty()
+                        users = profiles.mapNotNull { doc ->
                             val uid = doc.id
                             val displayName = doc.getString("displayName")?.trim().orEmpty()
                             if (uid == currentUid || displayName.isBlank()) null
-                            else {
+                            else DirectoryEntry(uid, displayName, "در حال دریافت وضعیت…", false, doc.getString("photoUrl"))
+                        }
+                        profiles.forEach { doc ->
+                            val uid = doc.id
+                            if (uid != currentUid && !doc.getString("displayName").isNullOrBlank()) {
                                 val onlineVisible = doc.getBoolean("showOnline") != false
                                 val lastSeenVisible = doc.getBoolean("showLastSeen") != false
-                                val online = onlineVisible && doc.getBoolean("online") == true
-                                val lastSeen = if (lastSeenVisible) doc.getTimestamp("lastSeen")?.toDate()?.let {
-                                    SimpleDateFormat("yyyy/MM/dd  HH:mm", Locale.getDefault()).format(it)
-                                } else null
-                                val status = when {
-                                    online -> "آنلاین"
-                                    lastSeen != null -> "آخرین بازدید: $lastSeen"
-                                    else -> "وضعیت پنهان است"
-                                }
-                                DirectoryEntry(uid, displayName, status, online, doc.getString("photoUrl"))
+                                val listener = repository.observePresence(uid, onlineVisible, lastSeenVisible, onUpdate = { presence ->
+                                    val online = onlineVisible && presence.online
+                                    val lastSeen = if (lastSeenVisible) presence.lastSeen?.let {
+                                        SimpleDateFormat("yyyy/MM/dd  HH:mm", Locale.getDefault()).format(it)
+                                    } else null
+                                    val status = when {
+                                        online -> "آنلاین"
+                                        lastSeen != null -> "آخرین بازدید: $lastSeen"
+                                        else -> "وضعیت پنهان است"
+                                    }
+                                    users = users.map { if (it.uid == uid) it.copy(status = status, online = online) else it }
+                                }, onError = { })
+                                presenceListeners.add(listener)
                             }
                         }
                         loading = false
@@ -91,7 +102,7 @@ fun UserDirectoryScreen(
                 error = exception.localizedMessage ?: "اتصال به فهرست مخاطبان برقرار نشد."
                 null
             }
-            onDispose { registration?.remove(); blockedRegistration.remove() }
+            onDispose { registration?.remove(); blockedRegistration.remove(); presenceListeners.forEach { it.remove() } }
         }
     }
 
