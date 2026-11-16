@@ -113,6 +113,19 @@ class FirebaseChatRepository(
         }.addOnFailureListener { onResult(Result.failure(it)) }
     }
 
+    fun observeConversations(
+        onUpdate: (QuerySnapshot?) -> Unit,
+        onError: (Exception) -> Unit
+    ): ListenerRegistration {
+        val uid = currentUserId()
+        require(uid != null) { "ابتدا وارد حساب کاربری شوید." }
+        return db.collection("conversations")
+            .whereArrayContains("participants", uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) onError(error) else onUpdate(snapshot)
+            }
+    }
+
     fun observeMessages(
         conversationId: String,
         onUpdate: (QuerySnapshot?) -> Unit,
