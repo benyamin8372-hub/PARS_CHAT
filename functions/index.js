@@ -119,10 +119,12 @@ exports.listAdminUsers = onCall({ region: "europe-west1" }, async (request) => {
     throw new HttpsError("permission-denied", "دسترسی این حساب غیرفعال شده است.");
   }
   const result = await getAuth().listUsers(1000);
-  return {
-    users: result.users.map((user) => ({
+  const users = await Promise.all(result.users.map(async (user) => {
+    const status = await db.collection("accountStatus").doc(user.uid).get();
+    return {
       uid: user.uid,
-      disabled: user.disabled === true
-    }))
-  };
+      disabled: user.disabled === true || (status.exists && status.data().suspended === true)
+    };
+  }));
+  return { users };
 });
