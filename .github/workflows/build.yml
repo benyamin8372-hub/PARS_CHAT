@@ -1,12 +1,23 @@
 name: Build PARS CHAT APK
 
-# APK builds are intentionally manual during the design-first phase.
-# Run workflow_dispatch only after the complete interface is approved.
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'gradle/**'
+      - '*.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: pars-chat-apk-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -40,4 +51,4 @@ jobs:
           name: PARS-CHAT-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
