@@ -10,16 +10,25 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
 class ParsMessagingService : FirebaseMessagingService() {
+    override fun onCreate() {
+        super.onCreate()
+        createMessageChannel()
+    }
+
+    private fun createMessageChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(NotificationChannel("pars_chat_messages", "پیام‌های پارس چت", NotificationManager.IMPORTANCE_HIGH))
+        }
+    }
+
     override fun onNewToken(token: String) {
         if (FirebaseAuth.getInstance().currentUser != null) FirebaseChatRepository().saveDeviceToken(token)
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
         val channelId = "pars_chat_messages"
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(NotificationChannel(channelId, "پیام‌های پارس چت", NotificationManager.IMPORTANCE_HIGH))
-        }
+        createMessageChannel()
         val title = message.notification?.title ?: "PARS CHAT"
         val body = message.notification?.body ?: "پیام تازه‌ای دریافت شد."
         val notification = NotificationCompat.Builder(this, channelId)
