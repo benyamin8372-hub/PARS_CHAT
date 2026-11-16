@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bentech.parschat.FirebaseChatRepository
+import com.google.firebase.messaging.FirebaseMessaging
 
 private val AuthNight = Color(0xFF091326)
 private val AuthGold = Color(0xFFC9A45D)
@@ -60,7 +61,10 @@ fun AuthScreen(onSuccess: (String) -> Unit, onBack: () -> Unit) {
         val repository = FirebaseChatRepository()
         val callback: (Result<String>) -> Unit = { result ->
             loading = false
-            result.onSuccess { uid -> onSuccess(uid) }
+            result.onSuccess { uid ->
+                FirebaseMessaging.getInstance().token.addOnSuccessListener { token -> FirebaseChatRepository().saveDeviceToken(token) }
+                onSuccess(uid)
+            }
                 .onFailure { failure -> error = failure.localizedMessage ?: "عملیات انجام نشد." }
         }
         if (registering) repository.register(cleanEmail, password, displayName.trim(), callback)
