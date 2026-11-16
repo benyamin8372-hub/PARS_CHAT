@@ -394,12 +394,9 @@ class MainActivity:ComponentActivity(){
        }){Icon(Icons.Default.PlayArrow,null,tint=Gold)};Text("پیام صوتی",color=fg)}}
        else -> ParsMessageBubble(message=m.body,time=m.time,outgoing=m.mine,modifier=Modifier.fillMaxWidth())
       }
-      /* legacy renderer removed */
-      when(m.type){
 
       if(m.mine && m.type=="text")Text(if(m.readBy.keys.any{it!=currentUid})"خوانده‌شده" else "ارسال‌شده",color=if(m.readBy.keys.any{it!=currentUid})Turquoise else Color.Gray,fontSize=9.sp,modifier=Modifier.align(Alignment.End).padding(end=5.dp))
       if(m.edited)Text("ویرایش‌شده",color=Color.Gray,fontSize=9.sp,modifier=Modifier.align(Alignment.End))
-     }
     }
    }
   }
