@@ -195,7 +195,7 @@ class MainActivity:ComponentActivity(){
  var filter by remember { mutableStateOf("همه") }
  val filtered = contacts.filter { person ->
   val matchesSearch = person.name.contains(search, ignoreCase = true) || person.last.contains(search, ignoreCase = true)
-  val matchesFilter = when(filter) { "خوانده‌نشده" -> person.unread > 0; "گروه‌ها" -> false; else -> true }
+  val matchesFilter = when(filter) { "خوانده‌نشده" -> person.unread > 0; "گروه‌ها" -> person.isGroup; else -> true }
   matchesSearch && matchesFilter
  }
  Scaffold(containerColor=bg,topBar={
