@@ -63,7 +63,7 @@ private val Turquoise = Color(0xFF55C8BC)
 private val Cream = Color(0xFFF5F1E7)
 private val Ink = Color(0xFF172344)
 private data class Person(val name:String,val last:String,val time:String,val unread:Int,val avatar:String,val uid:String="",val conversationId:String="",val isGroup:Boolean=false)
-private data class Message(val body:String,val mine:Boolean,val time:String,val id:String="",val senderId:String="",val type:String="text",val mediaUrl:String?=null,val edited:Boolean=false,val deleted:Boolean=false,val readBy:Map<String,Boolean> = emptyMap(),val replyToId:String?=null,val replyToText:String?=null)
+private data class Message(val body:String,val mine:Boolean,val time:String,val id:String="",val senderId:String="",val type:String="text",val mediaUrl:String?=null,val edited:Boolean=false,val deleted:Boolean=false,val readBy:Map<String,Boolean> = emptyMap(),val replyToId:String?=null,val replyToText:String?=null,val forwardedFrom:String?=null)
 
 class MainActivity:ComponentActivity(){
  private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -338,7 +338,7 @@ class MainActivity:ComponentActivity(){
      val readBy=(doc.get("readBy") as? Map<*,*>)?.mapNotNull{(k,v)->if(k is String && v is Boolean)k to v else null}?.toMap().orEmpty()
      Message(doc.getString("text").orEmpty(),doc.getString("senderId")==currentUid,time,doc.id,doc.getString("senderId").orEmpty(),
       doc.getString("type") ?: "text",doc.getString("mediaUrl"),doc.getTimestamp("editedAt")!=null,doc.getBoolean("deleted")==true,readBy,
-      doc.getString("replyToId"),doc.getString("replyToText"))
+      doc.getString("replyToId"),doc.getString("replyToText"),doc.getString("forwardedFrom"))
     }
     val unread=docs.filter{it.getString("senderId")!=currentUid && (it.get("readBy") as? Map<*,*>)?.get(currentUid)!=true}.map{it.id}
     if(unread.isNotEmpty())repository.markRead(conversationId,unread)
@@ -384,14 +384,19 @@ class MainActivity:ComponentActivity(){
    items(liveMessages,key={it.id}){m->
     Row(Modifier.fillMaxWidth(),horizontalArrangement=if(m.mine)Arrangement.End else Arrangement.Start){
      Column(Modifier.widthIn(max=300.dp).combinedClickable(onClick={},onLongClick={selectedMessage=m})){
+      if(m.forwardedFrom!=null)Text("فوروارد شده",color=Gold,fontSize=9.sp,modifier=Modifier.padding(start=8.dp,bottom=3.dp))
       if(m.replyToText!=null)Text("↳ ${m.replyToText}",color=Turquoise,fontSize=10.sp,modifier=Modifier.padding(start=8.dp,bottom=3.dp))
-      when(m.type){
-       "image"->{if(m.mediaUrl!=null)AsyncImage(model=m.mediaUrl,contentDescription="تصویر پیام",modifier=Modifier.fillMaxWidth().heightIn(max=220.dp).clip(RoundedCornerShape(15.dp)))}
-       "audio"->{Row(Modifier.clip(RoundedCornerShape(16.dp)).background(surface).padding(14.dp),verticalAlignment=Alignment.CenterVertically){IconButton(onClick={
+      when {
+       m.deleted -> ParsMessageBubble(message="این پیام حذف شد",time=m.time,outgoing=m.mine,modifier=Modifier.fillMaxWidth())
+       m.type=="image" -> {if(m.mediaUrl!=null)AsyncImage(model=m.mediaUrl,contentDescription="تصویر پیام",modifier=Modifier.fillMaxWidth().heightIn(max=220.dp).clip(RoundedCornerShape(15.dp)))}
+       m.type=="audio" -> {Row(Modifier.clip(RoundedCornerShape(16.dp)).background(surface).padding(14.dp),verticalAlignment=Alignment.CenterVertically){IconButton(onClick={
         m.mediaUrl?.let{url->try{MediaPlayer().apply{setDataSource(url);setOnPreparedListener{player->player.start()};setOnCompletionListener{player->player.release()};prepareAsync()}}catch(e:Exception){chatError="پخش پیام صوتی ممکن نشد."}}
        }){Icon(Icons.Default.PlayArrow,null,tint=Gold)};Text("پیام صوتی",color=fg)}}
-       else->ParsMessageBubble(message=m.body,time=m.time,outgoing=m.mine,modifier=Modifier.fillMaxWidth())
+       else -> ParsMessageBubble(message=m.body,time=m.time,outgoing=m.mine,modifier=Modifier.fillMaxWidth())
       }
+      /* legacy renderer removed */
+      when(m.type){
+
       if(m.mine && m.type=="text")Text(if(m.readBy.keys.any{it!=currentUid})"خوانده‌شده" else "ارسال‌شده",color=if(m.readBy.keys.any{it!=currentUid})Turquoise else Color.Gray,fontSize=9.sp,modifier=Modifier.align(Alignment.End).padding(end=5.dp))
       if(m.edited)Text("ویرایش‌شده",color=Color.Gray,fontSize=9.sp,modifier=Modifier.align(Alignment.End))
      }
@@ -404,9 +409,9 @@ class MainActivity:ComponentActivity(){
   AlertDialog(onDismissRequest={selectedMessage=null},title={Text("عملیات پیام")},text={Text(msg.body.take(180))},confirmButton={
    Row{
     TextButton(onClick={replyTarget=msg;selectedMessage=null}){Text("پاسخ")}
-    if(msg.mine && !msg.deleted)TextButton(onClick={editTarget=msg;editText=msg.body;selectedMessage=null}){Text("ویرایش")}
+    if(msg.mine && !msg.deleted && msg.type=="text")TextButton(onClick={editTarget=msg;editText=msg.body;selectedMessage=null}){Text("ویرایش")}
     if(msg.mine && !msg.deleted)TextButton(onClick={conversationId?.let{id->repository.deleteMessage(id,msg.id){it.onFailure{e->chatError=e.localizedMessage}}};selectedMessage=null}){Text("حذف")}
-    TextButton(onClick={forwardTarget=msg;selectedMessage=null}){Text("فوروارد")}
+    if(msg.type=="text" && !msg.deleted)TextButton(onClick={forwardTarget=msg;selectedMessage=null}){Text("فوروارد")}
    }
   },dismissButton={TextButton(onClick={selectedMessage=null}){Text("بستن")}})
  }
