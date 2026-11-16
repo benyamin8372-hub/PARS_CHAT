@@ -50,6 +50,7 @@ import com.bentech.parschat.ui.UserDirectoryScreen
 import com.bentech.parschat.ui.GroupCreateScreen
 import com.bentech.parschat.ui.AdminPanelScreen
 import com.bentech.parschat.ui.BlockedUsersScreen
+import com.bentech.parschat.ui.GroupManagementScreen
 import com.bentech.parschat.FirebaseChatRepository
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
@@ -152,8 +153,9 @@ class MainActivity:ComponentActivity(){
    "welcome"->Welcome{page="auth"}
    "auth"->AuthScreen(onSuccess={uid->sessionUid=uid;page="home";FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name }},onBack={page="welcome"})
    "home"->Home(bg,surface,fg,name,search,contacts,{search=it},{selected=it;conversationId=it.conversationId;page="chat"},{page="profile"},{page="settings"},{page="calls"},{page="groupCreate"})
-   "chat"->Chat(selected,bg,surface,fg,conversationId,contacts,{page="home"})
+   "chat"->Chat(selected,bg,surface,fg,conversationId,contacts,{page="home"},{page="groupManage"})
    "call"->CallPage(selected.name){page="chat"}
+   "groupManage"->GroupManagementScreen(selected.conversationId,bg,surface,fg){page="chat"}
    "admin"->AdminPanelScreen(bg,surface,fg){page="settings"}
    "blocked"->BlockedUsersScreen(bg,surface,fg){page="settings"}
    "groupCreate"->GroupCreateScreen(bg,surface,fg,onBack={page="home"},onCreated={id,groupName->selected=Person(groupName,"گروه تازه","",0,groupName.take(1),"",id,true);conversationId=id;page="chat"})
@@ -271,7 +273,7 @@ class MainActivity:ComponentActivity(){
  }
 }
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
-@Composable private fun Chat(person:Person,bg:Color,surface:Color,fg:Color,conversationId:String?,allConversations:List<Person>,back:()->Unit){
+@Composable private fun Chat(person:Person,bg:Color,surface:Color,fg:Color,conversationId:String?,allConversations:List<Person>,back:()->Unit,manageGroup:()->Unit){
  var draft by remember{mutableStateOf("")}
  val repository=remember{FirebaseChatRepository()}
  val currentUid=remember{repository.currentUserId()}
@@ -352,7 +354,7 @@ class MainActivity:ComponentActivity(){
   TopAppBar(
    title={Column{Text(person.name,color=fg,fontWeight=FontWeight.Bold);Text(if(person.isGroup)"گروه گفتگو" else "گفتگوی خصوصی",color=Color.Gray,fontSize=10.sp)}},
    navigationIcon={IconButton(back){Icon(Icons.Default.ArrowBack,null,tint=fg)}},
-   actions={if(!person.isGroup && person.uid.isNotBlank())IconButton({blockConfirm=true}){Icon(Icons.Default.Block,null,tint=Color(0xFFE6A0A0))}},
+   actions={if(person.isGroup)IconButton(manageGroup){Icon(Icons.Default.Group,null,tint=Gold)} else if(person.uid.isNotBlank())IconButton({blockConfirm=true}){Icon(Icons.Default.Block,null,tint=Color(0xFFE6A0A0))}},
    colors=TopAppBarDefaults.topAppBarColors(containerColor=surface)
   )
  },bottomBar={
