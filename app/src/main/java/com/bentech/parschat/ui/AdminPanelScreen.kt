@@ -43,7 +43,7 @@ fun AdminPanelScreen(background: Color, surface: Color, foreground: Color, onBac
             if (!isAdmin) { loading = false; return@addOnSuccessListener }
             FirebaseFunctions.getInstance("europe-west1").getHttpsCallable("listAdminUsers").call()
                 .addOnSuccessListener { callable ->
-                    val statusRows = (callable.data as? Map<*, *>)?.get("users") as? List<*> ?: emptyList<Any>()
+                    val statusRows = (callable.getData() as? Map<*, *>)?.get("users") as? List<*> ?: emptyList<Any>()
                     val statuses = statusRows.mapNotNull { row ->
                         val item = row as? Map<*, *> ?: return@mapNotNull null
                         val id = item["uid"] as? String ?: return@mapNotNull null
