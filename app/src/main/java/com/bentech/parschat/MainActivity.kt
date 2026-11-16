@@ -1,6 +1,10 @@
 package com.bentech.parschat
 
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.*
@@ -32,6 +36,7 @@ import com.bentech.parschat.ui.components.PersianMedallion
 import com.bentech.parschat.ui.components.GoldRimCard
 import com.bentech.parschat.ui.AuthScreen
 import com.bentech.parschat.ui.UserDirectoryScreen
+import com.bentech.parschat.ui.GroupCreateScreen
 import com.bentech.parschat.FirebaseChatRepository
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
@@ -47,11 +52,15 @@ private val Gold = Color(0xFFD8B45A)
 private val Turquoise = Color(0xFF55C8BC)
 private val Cream = Color(0xFFF5F1E7)
 private val Ink = Color(0xFF172344)
-private data class Person(val name:String,val last:String,val time:String,val unread:Int,val avatar:String,val uid:String="",val conversationId:String="")
-private data class Message(val body:String,val mine:Boolean,val time:String)
+private data class Person(val name:String,val last:String,val time:String,val unread:Int,val avatar:String,val uid:String="",val conversationId:String="",val isGroup:Boolean=false)
+private data class Message(val body:String,val mine:Boolean,val time:String,val id:String="",val senderId:String="",val type:String="text",val mediaUrl:String?=null,val edited:Boolean=false,val deleted:Boolean=false,val readBy:Map<String,Boolean> = emptyMap(),val replyToId:String?=null,val replyToText:String?=null)
 
 class MainActivity:ComponentActivity(){
+ private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+ private val presenceRepository by lazy { FirebaseChatRepository() }
  override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);window.statusBarColor=android.graphics.Color.rgb(9,19,47);window.navigationBarColor=android.graphics.Color.rgb(9,19,47);setContent{ParsChatApp()}}
+ override fun onStart(){super.onStart();if(FirebaseAuth.getInstance().currentUser!=null){presenceRepository.setPresence(true);if(android.os.Build.VERSION.SDK_INT>=33 && ContextCompat.checkSelfPermission(this,Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)}}
+ override fun onStop(){if(FirebaseAuth.getInstance().currentUser!=null)presenceRepository.setPresence(false);super.onStop()}
 }
 @Composable private fun ParsChatApp(){
  var page by remember{mutableStateOf(if(FirebaseAuth.getInstance().currentUser!=null) "home" else "welcome")}
@@ -78,14 +87,21 @@ class MainActivity:ComponentActivity(){
     val documents=snapshot?.documents.orEmpty()
     documents.forEach { conversation ->
      val participants=(conversation.get("participants") as? List<*>)?.filterIsInstance<String>().orEmpty()
-     val otherUid=participants.firstOrNull { it!=uid } ?: return@forEach
-     FirebaseFirestore.getInstance().collection("users").document(otherUid).get().addOnSuccessListener { profile ->
-      if(sessionUid==uid && profile.exists()){
-       val displayName=profile.getString("displayName")?.takeIf{it.isNotBlank()} ?: "کاربر"
-       val lastMessage=conversation.getString("lastMessage") ?: "گفتگوی تازه"
-       val time=conversation.getTimestamp("lastMessageAt")?.toDate()?.let{SimpleDateFormat("HH:mm",Locale.getDefault()).format(it)} ?: ""
-       val item=Person(displayName,lastMessage,time,0,displayName.take(1),otherUid,conversation.id)
-       contacts=(contacts.filterNot{it.conversationId==conversation.id}+item)
+     val isGroup=conversation.getString("type")=="group"
+     val lastMessage=conversation.getString("lastMessage") ?: "گفتگوی تازه"
+     val time=conversation.getTimestamp("lastMessageAt")?.toDate()?.let{SimpleDateFormat("HH:mm",Locale.getDefault()).format(it)} ?: ""
+     if(isGroup){
+      val groupName=conversation.getString("name") ?: "گروه"
+      val item=Person(groupName,lastMessage,time,0,groupName.take(1),"",conversation.id,true)
+      if(sessionUid==uid) contacts=(contacts.filterNot{it.conversationId==conversation.id}+item)
+     }else{
+      val otherUid=participants.firstOrNull { it!=uid } ?: return@forEach
+      FirebaseFirestore.getInstance().collection("users").document(otherUid).get().addOnSuccessListener { profile ->
+       if(sessionUid==uid && profile.exists()){
+        val displayName=profile.getString("displayName")?.takeIf{it.isNotBlank()} ?: "کاربر"
+        val item=Person(displayName,lastMessage,time,0,displayName.take(1),otherUid,conversation.id,false)
+        contacts=(contacts.filterNot{it.conversationId==conversation.id}+item)
+       }
       }
      }
     }
@@ -102,12 +118,13 @@ class MainActivity:ComponentActivity(){
   when(page){
    "welcome"->Welcome{page="auth"}
    "auth"->AuthScreen(onSuccess={uid->sessionUid=uid;page="home";FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name }},onBack={page="welcome"})
-   "home"->Home(bg,surface,fg,name,search,contacts,{search=it},{selected=it;conversationId=it.conversationId;page="chat"},{page="profile"},{page="settings"},{page="calls"})
+   "home"->Home(bg,surface,fg,name,search,contacts,{search=it},{selected=it;conversationId=it.conversationId;page="chat"},{page="profile"},{page="settings"},{page="calls"},{page="groupCreate"})
    "chat"->Chat(selected,bg,surface,fg,conversationId,chats[selected.name]?: mutableListOf(),{page="home"},{page="call"}){body->
     val list=chats[selected.name]?: mutableListOf<Message>().also{chats[selected.name]=it}
     list.add(Message(body,true,SimpleDateFormat("HH:mm",Locale.getDefault()).format(Date())))
    }
    "call"->CallPage(selected.name){page="chat"}
+   "groupCreate"->GroupCreateScreen(bg,surface,fg,onBack={page="home"},onCreated={id,groupName->selected=Person(groupName,"گروه تازه","",0,groupName.take(1),"",id,true);conversationId=id;page="chat"})
    "calls"->UserDirectoryScreen(bg,surface,fg,onBack={page="home"},onSelect={uid,displayName->FirebaseChatRepository().openConversation(uid){result->result.onSuccess{id->selected=Person(displayName,"گفتگوی تازه","",0,displayName.take(1),uid,id);conversationId=id;page="chat"}.onFailure{error->Toast.makeText(context,error.localizedMessage ?: "گفتگو باز نشد",Toast.LENGTH_LONG).show()}}})
    "settings"->Page("تنظیمات","شخصی‌سازی تجربه پارس چت",bg,fg,{page="home"}){
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(surface).padding(16.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.DarkMode,null,tint=Gold);Text("حالت تاریک",Modifier.weight(1f).padding(start=12.dp),color=fg);Switch(dark,{dark=it})}
@@ -132,7 +149,7 @@ class MainActivity:ComponentActivity(){
   }
  }
 }
-@Composable private fun Home(bg:Color,surface:Color,fg:Color,name:String,search:String,contacts:List<Person>,onSearch:(String)->Unit,onOpen:(Person)->Unit,onProfile:()->Unit,onSettings:()->Unit,onCalls:()->Unit){
+@Composable private fun Home(bg:Color,surface:Color,fg:Color,name:String,search:String,contacts:List<Person>,onSearch:(String)->Unit,onOpen:(Person)->Unit,onProfile:()->Unit,onSettings:()->Unit,onCalls:()->Unit,onCreateGroup:()->Unit){
  var filter by remember { mutableStateOf("همه") }
  val filtered = contacts.filter { person ->
   val matchesSearch = person.name.contains(search, ignoreCase = true) || person.last.contains(search, ignoreCase = true)
@@ -153,6 +170,7 @@ class MainActivity:ComponentActivity(){
   NavigationBar(containerColor=surface,contentColor=fg){
    NavigationBarItem(selected=true,onClick={},icon={Icon(Icons.Default.ChatBubble,null)},label={Text("گفتگوها")})
    NavigationBarItem(selected=false,onClick=onCalls,icon={Icon(Icons.Default.People,null)},label={Text("مخاطبان")})
+   NavigationBarItem(selected=false,onClick=onCreateGroup,icon={Icon(Icons.Default.GroupAdd,null)},label={Text("گروه")})
    NavigationBarItem(selected=false,onClick=onSettings,icon={Icon(Icons.Default.Tune,null)},label={Text("تنظیمات")})
   }
  },floatingActionButton={
@@ -199,7 +217,7 @@ class MainActivity:ComponentActivity(){
     }
    }else{
     LazyColumn(verticalArrangement=Arrangement.spacedBy(9.dp),contentPadding=PaddingValues(bottom=88.dp)){
-     items(filtered,key={it.name}){person->PersonRow(person,surface,fg){onOpen(person)}}
+     items(filtered,key={it.conversationId}){person->PersonRow(person,surface,fg){onOpen(person)}}
     }
    }
   }
