@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.DisposableEffect
 import com.bentech.parschat.FirebaseChatRepository
 import com.bentech.parschat.ui.components.DimensionalAvatar
+import com.bentech.parschat.ui.components.FaravaharChatMark
 import coil.compose.AsyncImage
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -115,6 +116,8 @@ fun UserDirectoryScreen(
     Column(Modifier.fillMaxSize().background(background).statusBarsPadding().navigationBarsPadding().padding(horizontal = 16.dp)) {
         Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = foreground) }
+            FaravaharChatMark(diameter = 38.dp, glow = .72f)
+            Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text("مخاطبان", color = foreground, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 Text("کاربران ثبت‌نام‌شده در پارس چت", color = Color.Gray, fontSize = 11.sp)
