@@ -303,6 +303,7 @@ class MainActivity:ComponentActivity(){
  var replyTarget by remember{mutableStateOf<Message?>(null)}
  var forwardTarget by remember{mutableStateOf<Message?>(null)}
  var blockConfirm by remember{mutableStateOf(false)}
+ var showChatMenu by remember{mutableStateOf(false)}
  var uploadBusy by remember{mutableStateOf(false)}
  var recording by remember{mutableStateOf(false)}
  var recorder by remember{mutableStateOf<MediaRecorder?>(null)}
@@ -384,7 +385,14 @@ class MainActivity:ComponentActivity(){
    }
    if(person.isGroup)IconButton(manageGroup){Icon(Icons.Default.Group,null,tint=Gold)}
    else if(person.uid.isNotBlank())IconButton({blockConfirm=true}){Icon(Icons.Default.Block,null,tint=Color(0xFFE6A0A0))}
-   IconButton({Toast.makeText(context,"تنظیمات گفتگو به‌زودی در دسترس است",Toast.LENGTH_SHORT).show()}){Icon(Icons.Default.MoreVert,null,tint=Color(0xFFF3E6C4))}
+   Box{
+    IconButton({showChatMenu=true}){Icon(Icons.Default.MoreVert,null,tint=Color(0xFFF3E6C4))}
+    DropdownMenu(expanded=showChatMenu,onDismissRequest={showChatMenu=false}){
+     if(person.isGroup)DropdownMenuItem(text={Text("مدیریت گروه")},onClick={showChatMenu=false;manageGroup()})
+     else if(person.uid.isNotBlank())DropdownMenuItem(text={Text("مسدودسازی کاربر")},onClick={showChatMenu=false;blockConfirm=true})
+     DropdownMenuItem(text={Text("بازگشت به گفتگوها")},onClick={showChatMenu=false;back()})
+    }
+   }
   }
  },bottomBar={
   Column(
