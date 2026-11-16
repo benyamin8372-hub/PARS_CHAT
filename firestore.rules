@@ -56,6 +56,7 @@ service cloud.firestore {
           || request.auth.uid in resource.data.participants || admin());
       allow list: if signedIn() && (request.auth.uid in resource.data.participants || admin());
       allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['participants','type','createdBy','createdAt','updatedAt','name','admins'])
         && request.resource.data.participants is list
         && request.auth.uid in request.resource.data.participants
         && request.resource.data.participants.size() >= 2
@@ -76,18 +77,25 @@ service cloud.firestore {
       allow update: if signedIn() && request.auth.uid in resource.data.participants
         && (
           (request.resource.data.participants == resource.data.participants
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['updatedAt','lastMessage','lastMessageAt']))
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['updatedAt','lastMessage','lastMessageAt'])
+            && request.resource.data.updatedAt == request.time
+            && (!('lastMessageAt' in request.resource.data) || request.resource.data.lastMessageAt == request.time))
           || (resource.data.type == 'group'
             && request.auth.uid in resource.data.admins
             && request.resource.data.participants == resource.data.participants
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','updatedAt']))
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','updatedAt'])
+            && request.resource.data.name is string
+            && request.resource.data.name.size() >= 2
+            && request.resource.data.name.size() <= 60
+            && request.resource.data.updatedAt == request.time)
           || (resource.data.type == 'group'
             && request.auth.uid in resource.data.admins
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participants','updatedAt'])
             && request.resource.data.participants is list
             && request.resource.data.participants.size() >= 2
             && request.resource.data.participants.size() <= 50
-            && request.auth.uid in request.resource.data.participants)
+            && request.auth.uid in request.resource.data.participants
+            && request.resource.data.updatedAt == request.time)
         );
       allow delete: if false;
 
