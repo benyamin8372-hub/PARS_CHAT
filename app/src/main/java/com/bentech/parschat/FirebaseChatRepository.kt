@@ -37,7 +37,7 @@ class FirebaseChatRepository(
                     "createdAt" to FieldValue.serverTimestamp(),
                     "showOnline" to true, "showLastSeen" to true, "blockedCount" to 0)
                 db.collection("users").document(user.uid).set(profile)
-                    .addOnSuccessListener { onResult(Result.success(user.uid)) }
+                    .addOnSuccessListener { setPresence(true) { onResult(Result.success(user.uid)) } }
                     .addOnFailureListener { error -> user.delete(); onResult(Result.failure(error)) }
             }.addOnFailureListener { onResult(Result.failure(it)) }
     }
@@ -71,28 +71,44 @@ class FirebaseChatRepository(
             .addOnFailureListener { onResult?.invoke(Result.failure(it)) }
     }
 
-    fun observePresence(userId: String, onUpdate: (UserPresence) -> Unit, onError: (Exception) -> Unit): ListenerRegistration {
+    fun observePresence(
+        userId: String,
+        showOnline: Boolean,
+        showLastSeen: Boolean,
+        onUpdate: (UserPresence) -> Unit,
+        onError: (Exception) -> Unit
+    ): ListenerRegistration {
         val presence = db.collection("users").document(userId).collection("presence")
         var online = false
         var lastSeen: Date? = null
-        var onlineReady = false
-        var lastSeenReady = false
-        val onlineListener = presence.document("online").addSnapshotListener { snapshot, error ->
-            if (error != null) onError(error) else {
-                online = snapshot?.getBoolean("online") == true
-                onlineReady = true
-                if (onlineReady && lastSeenReady) onUpdate(UserPresence(online, lastSeen))
+        var onlineReady = !showOnline
+        var lastSeenReady = !showLastSeen
+        var onlineListener: ListenerRegistration? = null
+        var lastSeenListener: ListenerRegistration? = null
+        fun emitIfReady() {
+            if (onlineReady && lastSeenReady) onUpdate(UserPresence(online, lastSeen))
+        }
+        if (showOnline) {
+            onlineListener = presence.document("online").addSnapshotListener { snapshot, error ->
+                if (error != null) onError(error) else {
+                    online = snapshot?.getBoolean("online") == true
+                    onlineReady = true
+                    emitIfReady()
+                }
             }
         }
-        val lastSeenListener = presence.document("lastSeen").addSnapshotListener { snapshot, error ->
-            if (error != null) onError(error) else {
-                lastSeen = snapshot?.getTimestamp("lastSeen")?.toDate()
-                lastSeenReady = true
-                if (onlineReady && lastSeenReady) onUpdate(UserPresence(online, lastSeen))
+        if (showLastSeen) {
+            lastSeenListener = presence.document("lastSeen").addSnapshotListener { snapshot, error ->
+                if (error != null) onError(error) else {
+                    lastSeen = snapshot?.getTimestamp("lastSeen")?.toDate()
+                    lastSeenReady = true
+                    emitIfReady()
+                }
             }
         }
+        emitIfReady()
         return object : ListenerRegistration {
-            override fun remove() { onlineListener.remove(); lastSeenListener.remove() }
+            override fun remove() { onlineListener?.remove(); lastSeenListener?.remove() }
         }
     }
 
