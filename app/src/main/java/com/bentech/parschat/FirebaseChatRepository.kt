@@ -209,15 +209,33 @@ class FirebaseChatRepository(
     fun editMessage(conversationId: String, messageId: String, newText: String, onResult: (Result<Unit>) -> Unit) {
         val body = newText.trim()
         if (body.isEmpty() || body.length > 4000) { onResult(Result.failure(IllegalArgumentException("متن پیام معتبر نیست."))); return }
-        db.collection("conversations").document(conversationId).collection("messages").document(messageId)
-            .update(mapOf("text" to body, "editedAt" to FieldValue.serverTimestamp()))
-            .addOnSuccessListener { onResult(Result.success(Unit)) }.addOnFailureListener { onResult(Result.failure(it)) }
+        val conversation = db.collection("conversations").document(conversationId)
+        val messageRef = conversation.collection("messages").document(messageId)
+        messageRef.update(mapOf("text" to body, "editedAt" to FieldValue.serverTimestamp()))
+            .addOnSuccessListener {
+                conversation.collection("messages").orderBy("createdAt", Query.Direction.DESCENDING).limit(1).get()
+                    .addOnSuccessListener { latest ->
+                        if (latest.documents.firstOrNull()?.id == messageId) {
+                            conversation.update(mapOf("lastMessage" to body, "lastMessageAt" to FieldValue.serverTimestamp(), "updatedAt" to FieldValue.serverTimestamp()))
+                        }
+                    }
+                onResult(Result.success(Unit))
+            }.addOnFailureListener { onResult(Result.failure(it)) }
     }
 
     fun deleteMessage(conversationId: String, messageId: String, onResult: (Result<Unit>) -> Unit) {
-        db.collection("conversations").document(conversationId).collection("messages").document(messageId)
-            .update(mapOf("deleted" to true, "text" to "این پیام حذف شد", "deletedAt" to FieldValue.serverTimestamp()))
-            .addOnSuccessListener { onResult(Result.success(Unit)) }.addOnFailureListener { onResult(Result.failure(it)) }
+        val conversation = db.collection("conversations").document(conversationId)
+        val messageRef = conversation.collection("messages").document(messageId)
+        messageRef.update(mapOf("deleted" to true, "text" to "این پیام حذف شد", "deletedAt" to FieldValue.serverTimestamp()))
+            .addOnSuccessListener {
+                conversation.collection("messages").orderBy("createdAt", Query.Direction.DESCENDING).limit(1).get()
+                    .addOnSuccessListener { latest ->
+                        if (latest.documents.firstOrNull()?.id == messageId) {
+                            conversation.update(mapOf("lastMessage" to "این پیام حذف شد", "lastMessageAt" to FieldValue.serverTimestamp(), "updatedAt" to FieldValue.serverTimestamp()))
+                        }
+                    }
+                onResult(Result.success(Unit))
+            }.addOnFailureListener { onResult(Result.failure(it)) }
     }
 
     fun markRead(conversationId: String, messageIds: List<String>, onResult: ((Result<Unit>) -> Unit)? = null) {
