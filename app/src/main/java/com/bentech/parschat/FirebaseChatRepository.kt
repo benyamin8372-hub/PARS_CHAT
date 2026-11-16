@@ -31,7 +31,7 @@ class FirebaseChatRepository(
                 val user = result.user ?: run { onResult(Result.failure(IllegalStateException("حساب ایجاد نشد."))); return@addOnSuccessListener }
                 val profile = mapOf("uid" to user.uid, "displayName" to name, "photoUrl" to null,
                     "createdAt" to FieldValue.serverTimestamp(), "lastSeen" to FieldValue.serverTimestamp(),
-                    "online" to true, "blockedCount" to 0)
+                    "online" to true, "showOnline" to true, "showLastSeen" to true, "blockedCount" to 0)
                 db.collection("users").document(user.uid).set(profile)
                     .addOnSuccessListener { onResult(Result.success(user.uid)) }
                     .addOnFailureListener { error -> user.delete(); onResult(Result.failure(error)) }
@@ -62,6 +62,12 @@ class FirebaseChatRepository(
         db.collection("users").document(uid).update(updates)
             .addOnSuccessListener { onResult?.invoke(Result.success(Unit)) }
             .addOnFailureListener { onResult?.invoke(Result.failure(it)) }
+    }
+
+    fun updatePrivacy(showOnline: Boolean, showLastSeen: Boolean, onResult: (Result<Unit>) -> Unit) {
+        val uid = currentUserId() ?: run { onResult(Result.failure(IllegalStateException("ورود لازم است."))); return }
+        db.collection("users").document(uid).update(mapOf("showOnline" to showOnline, "showLastSeen" to showLastSeen))
+            .addOnSuccessListener { onResult(Result.success(Unit)) }.addOnFailureListener { onResult(Result.failure(it)) }
     }
 
     fun updateDisplayName(name: String, onResult: (Result<Unit>) -> Unit) {
