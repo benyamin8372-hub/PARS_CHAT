@@ -134,9 +134,13 @@ service cloud.firestore {
               && request.resource.data.text.size() > 0
               && request.resource.data.text.size() <= 4000)
             ||
-            (request.resource.data.type in ['image','audio']
-              && request.resource.data.mediaUrl is string
-              && request.resource.data.mimeType is string)
+            (request.resource.data.type == 'image'
+              && request.resource.data.mediaUrl.matches('https://firebasestorage.googleapis.com/.*')
+              && request.resource.data.mimeType.matches('image/.*'))
+            ||
+            (request.resource.data.type == 'audio'
+              && request.resource.data.mediaUrl.matches('https://firebasestorage.googleapis.com/.*')
+              && request.resource.data.mimeType.matches('audio/.*'))
           )
           && request.resource.data.keys().hasOnly([
             'senderId','text','createdAt','type','readBy','replyToId','replyToText','forwardedFrom','mediaUrl','mimeType'
