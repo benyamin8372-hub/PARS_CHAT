@@ -2,39 +2,44 @@
 
 Last updated: 2026-11-16
 
-## Completed in source
+## Implemented in repository source
 
-- [x] Approved 15-feature scope retained as the product target.
-- [x] Lapis / brushed-gold / restrained turquoise design tokens and reusable dimensional components.
-- [x] Dimensional avatar and refined incoming/outgoing message bubble components.
-- [x] Home screen visual rebuild: branded header, search field, all/unread/groups filters, unread counts, and empty states.
-- [x] Welcome screen no longer bypasses authentication.
-- [x] Firebase email/password sign-in and registration UI with basic client-side validation, loading state, and visible errors.
-- [x] Authentication screen uses the shared FirebaseChatRepository.
-- [x] Authenticated Firebase session is restored on app launch.
-- [x] Display name is loaded from the Firestore user profile and profile edits are written to Firestore.
-- [x] Sign-out action added to Settings.
-- [x] Removed hard-coded online indicator and fabricated read receipts.
-- [x] Removed visible call actions because no calling provider is integrated; secondary navigation is labelled Contacts.
+1. **Registration and login:** Firebase email/password authentication, validation, loading/error states, profile document creation, session restoration and sign-out.
+2. **User profiles:** display-name editing, profile-photo upload to Firebase Storage, photo rendering in profile, directory and conversation list.
+3. **User search:** live Firestore user directory, display-name search, current-user exclusion and local blocked-user filtering.
+4. **Private chat:** deterministic two-user conversation IDs, Firestore realtime message timeline and text sending.
+5. **Online/offline:** app foreground/background presence updates; the current implementation is lifecycle-based and can become stale after an abrupt process kill.
+6. **Last seen:** timestamp updates when the app leaves foreground; users can hide online and last-seen details independently.
+7. **Read receipts:** per-message readBy map, read marking on open, and sender-side read status.
+8. **Edit/delete:** sender-authorized message edit and soft-delete.
+9. **Reply/forward:** reply metadata and forward source-message metadata; forwarding currently supports text messages.
+10. **Images:** system image picker, Firebase Storage upload, and in-chat image rendering.
+11. **Voice messages:** in-app microphone recording, audio upload, audio-file attachment and playback.
+12. **Groups:** create groups, group admin role, rename groups, add/remove members, and group chat.
+13. **Notifications:** FCM token registration, Android notification service/channel, and Cloud Function message trigger.
+14. **Block users:** block/unblock screen, directory filtering, private-message and media-upload checks, and push-notification suppression for blocked private chats.
+15. **Admin panel:** custom-claim gate, user/conversation counts, admin-only user listing, suspend/enable callable, audit records, and Firestore/Storage denial for suspended accounts.
 
-## Not yet complete — required before release
+## Firebase source/configuration included
 
-- [x] Remove hard-coded sample users and messages from production navigation.
-- [x] Add Firestore-backed user directory with live updates and self-profile exclusion.
-- [x] Add Firestore conversation observation and open/create private conversations.
-- [x] Connect private text-message timeline and sending to realtime Firestore listeners.
-- [x] Add user search that excludes the current user. Blocked-user filtering remains pending.
-- [ ] Persist and display accurate online/last-seen state with privacy controls.
-- [ ] Implement message edit/delete, reply, forward, and actual read receipts.
-- [ ] Implement image and voice-message upload/playback with Firebase Storage and runtime permissions.
-- [ ] Implement group creation, membership, roles, and server-enforced permissions.
-- [ ] Add push notifications with Firebase Cloud Messaging.
-- [ ] Implement block/unblock flows and Firestore security rules.
-- [ ] Implement a server-authorized admin console with audit history.
-- [ ] Add loading, offline, retry, and permission-denied states across all data screens.
-- [ ] Review Firestore rules and test security using Firebase Emulator or a dedicated test project.
-- [ ] Run Android build, install, and device QA only after the owner approves the complete UI.
+- `firestore.rules`: membership, private-chat block checks, group roles, message ownership, read-receipt integrity, device tokens, admin claims and suspended-account checks.
+- `storage.rules`: participant-only image/audio upload, profile-photo access, size and MIME checks, private-chat block checks, and suspended-account checks.
+- `functions/index.js`: FCM notifications, admin-only account status listing and suspension.
+- `functions/set-admin.js`: trusted local script to grant the initial admin custom claim.
+- `firebase.json` and `.firebaserc`: deployment configuration for project `parschat-3f91f`.
+- `docs/FIREBASE_DEPLOYMENT.md`: deployment and first-admin setup.
+
+## Still required before this can be called production-ready
+
+- [ ] Deploy the Firestore rules, Storage rules and Cloud Functions to the existing Firebase project.
+- [ ] Confirm Firebase Storage and Cloud Functions are enabled for the project.
+- [ ] Provision the intended administrator UID using the trusted Admin SDK script.
+- [ ] Test registration, two-account private chat, groups, block enforcement, media upload, FCM delivery and admin suspension against the real Firebase project.
+- [ ] Run Firebase Emulator/security-rule tests and fix any denied/over-permissive cases.
+- [ ] Compile the Android app, resolve any build errors, install on a real device and complete UI/device QA.
+- [ ] Verify lifecycle presence behavior under force-stop, loss of connectivity and process death; a Realtime Database onDisconnect presence backend may be needed for stronger presence guarantees.
+- [ ] Add pagination and operational monitoring before scaling beyond a small initial user base.
 
 ## Build policy
 
-The GitHub Actions build remains manual. No APK build has been started as part of these design and source updates. Source commits have not been compile-verified; run the build only after the complete interface is ready and explicitly approved.
+The GitHub Actions APK workflow remains manual. No APK build has been started. Source commits have not been compile-verified; the app must be built and tested before an APK can be described as working.
