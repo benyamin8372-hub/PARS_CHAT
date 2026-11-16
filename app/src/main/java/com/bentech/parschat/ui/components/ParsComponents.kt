@@ -123,7 +123,7 @@ fun ParsBrandLockup(
     glow: Float = 0.55f
 ) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        FaravaharMark(diameter = emblemSize, glow = glow)
+        FaravaharChatMark(diameter = emblemSize, glow = glow)
         Column(Modifier.padding(start = 12.dp)) {
             Text("چت پارس", color = PaleGold, fontSize = 23.sp, fontWeight = FontWeight.Black)
             Text("PARS CHAT", color = Ivory.copy(alpha = .82f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.4.sp)
