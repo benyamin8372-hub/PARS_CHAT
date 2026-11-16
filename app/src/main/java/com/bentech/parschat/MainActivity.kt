@@ -47,9 +47,8 @@ private val Gold = Color(0xFFD8B45A)
 private val Turquoise = Color(0xFF55C8BC)
 private val Cream = Color(0xFFF5F1E7)
 private val Ink = Color(0xFF172344)
-private data class Person(val name:String,val last:String,val time:String,val unread:Int,val avatar:String,val uid:String="")
+private data class Person(val name:String,val last:String,val time:String,val unread:Int,val avatar:String,val uid:String="",val conversationId:String="")
 private data class Message(val body:String,val mine:Boolean,val time:String)
-private val contacts = emptyList<Person>()
 
 class MainActivity:ComponentActivity(){
  override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);window.statusBarColor=android.graphics.Color.rgb(9,19,47);window.navigationBarColor=android.graphics.Color.rgb(9,19,47);setContent{ParsChatApp()}}
@@ -57,13 +56,42 @@ class MainActivity:ComponentActivity(){
 @Composable private fun ParsChatApp(){
  var page by remember{mutableStateOf(if(FirebaseAuth.getInstance().currentUser!=null) "home" else "welcome")}
  var selected by remember{mutableStateOf(Person("","", "",0,""))}
+ var contacts by remember{mutableStateOf<List<Person>>(emptyList())}
+ var sessionUid by remember{mutableStateOf(FirebaseAuth.getInstance().currentUser?.uid)}
+ val repository = remember { FirebaseChatRepository() }
  var conversationId by remember{mutableStateOf<String?>(null)}
  val context= LocalContext.current
  var dark by remember{mutableStateOf(true)}
  var name by remember{mutableStateOf(FirebaseAuth.getInstance().currentUser?.displayName ?: "کاربر")}
- LaunchedEffect(Unit){
-  val uid=FirebaseAuth.getInstance().currentUser?.uid
+ LaunchedEffect(sessionUid){
+  val uid=sessionUid
   if(uid!=null) FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name }
+ }
+ DisposableEffect(sessionUid){
+  val uid=sessionUid
+  if(uid==null){
+   contacts=emptyList()
+   onDispose { }
+  }else{
+   val registration=repository.observeConversations(onUpdate={snapshot->
+    contacts=emptyList()
+    val documents=snapshot?.documents.orEmpty()
+    documents.forEach { conversation ->
+     val participants=(conversation.get("participants") as? List<*>)?.filterIsInstance<String>().orEmpty()
+     val otherUid=participants.firstOrNull { it!=uid } ?: return@forEach
+     FirebaseFirestore.getInstance().collection("users").document(otherUid).get().addOnSuccessListener { profile ->
+      if(sessionUid==uid && profile.exists()){
+       val displayName=profile.getString("displayName")?.takeIf{it.isNotBlank()} ?: "کاربر"
+       val lastMessage=conversation.getString("lastMessage") ?: "گفتگوی تازه"
+       val time=conversation.getTimestamp("lastMessageAt")?.toDate()?.let{SimpleDateFormat("HH:mm",Locale.getDefault()).format(it)} ?: ""
+       val item=Person(displayName,lastMessage,time,0,displayName.take(1),otherUid,conversation.id)
+       contacts=(contacts.filterNot{it.conversationId==conversation.id}+item)
+      }
+     }
+    }
+   },onError={})
+   onDispose { registration.remove() }
+  }
  }
  var search by remember{mutableStateOf("")}
  val chats=remember{mutableStateMapOf<String,MutableList<Message>>()}
@@ -73,17 +101,17 @@ class MainActivity:ComponentActivity(){
  MaterialTheme(colorScheme=darkColorScheme(primary=Gold,secondary=Turquoise,background=bg,surface=surface,onSurface=fg)){
   when(page){
    "welcome"->Welcome{page="auth"}
-   "auth"->AuthScreen(onSuccess={uid->page="home";FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name }},onBack={page="welcome"})
-   "home"->Home(bg,surface,fg,name,search,{search=it},{selected=it;conversationId=null;page="chat"},{page="profile"},{page="settings"},{page="calls"})
+   "auth"->AuthScreen(onSuccess={uid->sessionUid=uid;page="home";FirebaseFirestore.getInstance().collection("users").document(uid).get().addOnSuccessListener { doc -> name=doc.getString("displayName") ?: name }},onBack={page="welcome"})
+   "home"->Home(bg,surface,fg,name,search,contacts,{search=it},{selected=it;conversationId=it.conversationId;page="chat"},{page="profile"},{page="settings"},{page="calls"})
    "chat"->Chat(selected,bg,surface,fg,conversationId,chats[selected.name]?: mutableListOf(),{page="home"},{page="call"}){body->
     val list=chats[selected.name]?: mutableListOf<Message>().also{chats[selected.name]=it}
     list.add(Message(body,true,SimpleDateFormat("HH:mm",Locale.getDefault()).format(Date())))
    }
    "call"->CallPage(selected.name){page="chat"}
-   "calls"->UserDirectoryScreen(bg,surface,fg,onBack={page="home"},onSelect={uid,displayName->FirebaseChatRepository().openConversation(uid){result->result.onSuccess{id->selected=Person(displayName,"","",0,displayName.take(1),uid);conversationId=id;page="chat"}.onFailure{error->Toast.makeText(context,error.localizedMessage ?: "گفتگو باز نشد",Toast.LENGTH_LONG).show()}}})
+   "calls"->UserDirectoryScreen(bg,surface,fg,onBack={page="home"},onSelect={uid,displayName->FirebaseChatRepository().openConversation(uid){result->result.onSuccess{id->selected=Person(displayName,"گفتگوی تازه","",0,displayName.take(1),uid,id);conversationId=id;page="chat"}.onFailure{error->Toast.makeText(context,error.localizedMessage ?: "گفتگو باز نشد",Toast.LENGTH_LONG).show()}}})
    "settings"->Page("تنظیمات","شخصی‌سازی تجربه پارس چت",bg,fg,{page="home"}){
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(surface).padding(16.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.DarkMode,null,tint=Gold);Text("حالت تاریک",Modifier.weight(1f).padding(start=12.dp),color=fg);Switch(dark,{dark=it})}
-    Spacer(Modifier.height(16.dp));Text("درباره برنامه",color=fg,fontWeight=FontWeight.Bold);Text("PARS CHAT  •  نسخه ۱.۱.۰",color=Gold);Text("ساخته بنیامین نوری دفرازی",color=fg);Spacer(Modifier.height(24.dp));Button(onClick={FirebaseAuth.getInstance().signOut();page="welcome"},modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF8D3D45))){Text("خروج از حساب",color=Color.White)}
+    Spacer(Modifier.height(16.dp));Text("درباره برنامه",color=fg,fontWeight=FontWeight.Bold);Text("PARS CHAT  •  نسخه ۱.۱.۰",color=Gold);Text("ساخته بنیامین نوری دفرازی",color=fg);Spacer(Modifier.height(24.dp));Button(onClick={FirebaseAuth.getInstance().signOut();sessionUid=null;page="welcome"},modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF8D3D45))){Text("خروج از حساب",color=Color.White)}
    }
    else->Profile(name,{newName->name=newName;FirebaseAuth.getInstance().currentUser?.uid?.let{uid->FirebaseFirestore.getInstance().collection("users").document(uid).update("displayName",newName)}},bg,surface,fg){page="home"}
   }
@@ -104,7 +132,7 @@ class MainActivity:ComponentActivity(){
   }
  }
 }
-@Composable private fun Home(bg:Color,surface:Color,fg:Color,name:String,search:String,onSearch:(String)->Unit,onOpen:(Person)->Unit,onProfile:()->Unit,onSettings:()->Unit,onCalls:()->Unit){
+@Composable private fun Home(bg:Color,surface:Color,fg:Color,name:String,search:String,contacts:List<Person>,onSearch:(String)->Unit,onOpen:(Person)->Unit,onProfile:()->Unit,onSettings:()->Unit,onCalls:()->Unit){
  var filter by remember { mutableStateOf("همه") }
  val filtered = contacts.filter { person ->
   val matchesSearch = person.name.contains(search, ignoreCase = true) || person.last.contains(search, ignoreCase = true)
