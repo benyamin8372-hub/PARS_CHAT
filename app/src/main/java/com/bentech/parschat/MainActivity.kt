@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bentech.parschat.ui.components.DimensionalAvatar
 import com.bentech.parschat.ui.components.ParsMessageBubble
+import com.bentech.parschat.ui.components.PersianMedallion
+import com.bentech.parschat.ui.components.GoldRimCard
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -97,19 +99,81 @@ class MainActivity:ComponentActivity(){
  }
 }
 @Composable private fun Home(bg:Color,surface:Color,fg:Color,name:String,search:String,onSearch:(String)->Unit,onOpen:(Person)->Unit,onProfile:()->Unit,onSettings:()->Unit,onCalls:()->Unit){
- Scaffold(containerColor=bg,topBar={Row(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Night,Navy))).padding(16.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("PARS CHAT",color=Gold,fontWeight=FontWeight.Black,fontSize=20.sp,letterSpacing=2.sp);Text("درود، "+name,color=Color.LightGray,fontSize=12.sp)};IconButton(onProfile){Icon(Icons.Default.AccountCircle,null,tint=Gold)};IconButton(onSettings){Icon(Icons.Default.Settings,null,tint=Gold)}}},bottomBar={NavigationBar(containerColor=surface){NavigationBarItem(true,{},{Icon(Icons.Default.ChatBubble,null)},label={Text("گفتگوها")});NavigationBarItem(false,onCalls,{Icon(Icons.Default.Call,null)},label={Text("تماس‌ها")});NavigationBarItem(false,onSettings,{Icon(Icons.Default.Tune,null)},label={Text("تنظیمات")})}},floatingActionButton={FloatingActionButton(onClick={onOpen(contacts[0])},containerColor=Gold,contentColor=Night){Icon(Icons.Default.Edit,null)}}){p->
- Column(Modifier.fillMaxSize().padding(p).padding(horizontal=16.dp)){
-  Spacer(Modifier.height(18.dp));Text("گفتگوهای تو",color=fg,fontSize=25.sp,fontWeight=FontWeight.Bold);Text("ارتباطی به رنگ تاریخ",color=Color.Gray,fontSize=12.sp)
-  Row(Modifier.fillMaxWidth().padding(top=16.dp).clip(RoundedCornerShape(15.dp)).background(surface).padding(12.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.Search,null,tint=Turquoise);BasicTextField(search,onSearch,Modifier.weight(1f).padding(start=10.dp),singleLine=true,textStyle=TextStyle(color=fg),decorationBox={inner->if(search.isEmpty())Text("جستجو در گفتگوها...",color=Color.Gray);inner()})}
-  val list=contacts.filter{it.name.contains(search)||it.last.contains(search)}
-  Row(Modifier.fillMaxWidth().padding(top=16.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically){Text("همه گفتگوها",color=fg,fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));Text(list.size.toString()+" گفتگو",color=Color.Gray,fontSize=12.sp)}
-  LazyColumn(verticalArrangement=Arrangement.spacedBy(9.dp),contentPadding=PaddingValues(bottom=80.dp)){items(list,key={it.name}){PersonRow(it,surface,fg){onOpen(it)}}}
+ var filter by remember { mutableStateOf("همه") }
+ val filtered = contacts.filter { person ->
+  val matchesSearch = person.name.contains(search, ignoreCase = true) || person.last.contains(search, ignoreCase = true)
+  val matchesFilter = when(filter) { "خوانده‌نشده" -> person.unread > 0; "گروه‌ها" -> false; else -> true }
+  matchesSearch && matchesFilter
  }
+ Scaffold(containerColor=bg,topBar={
+  Row(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Night,Color(0xFF1B3155),Night))).padding(horizontal=18.dp,vertical=14.dp),verticalAlignment=Alignment.CenterVertically){
+   PersianMedallion(diameter=48.dp)
+   Column(Modifier.weight(1f).padding(start=12.dp)){
+    Text("PARS CHAT",color=Gold,fontWeight=FontWeight.Black,fontSize=18.sp,letterSpacing=2.sp)
+    Text("درود، $name",color=Color(0xFFD7DFEA),fontSize=12.sp)
+   }
+   IconButton(onProfile){Icon(Icons.Default.AccountCircle,null,tint=Gold)}
+   IconButton(onSettings){Icon(Icons.Default.Settings,null,tint=Gold)}
+  }
+ },bottomBar={
+  NavigationBar(containerColor=surface,contentColor=fg){
+   NavigationBarItem(selected=true,onClick={},icon={Icon(Icons.Default.ChatBubble,null)},label={Text("گفتگوها")})
+   NavigationBarItem(selected=false,onClick=onCalls,icon={Icon(Icons.Default.Call,null)},label={Text("تماس‌ها")})
+   NavigationBarItem(selected=false,onClick=onSettings,icon={Icon(Icons.Default.Tune,null)},label={Text("تنظیمات")})
+  }
+ },floatingActionButton={
+  FloatingActionButton(onClick={onOpen(contacts[0])},containerColor=Gold,contentColor=Night,shape=RoundedCornerShape(18.dp)){Icon(Icons.Default.Edit,null)}
+ }){ padding ->
+  Column(Modifier.fillMaxSize().padding(padding).padding(horizontal=16.dp)){
+   Spacer(Modifier.height(18.dp))
+   Row(verticalAlignment=Alignment.CenterVertically){
+    Column(Modifier.weight(1f)){
+     Text("گفتگوهای تو",color=fg,fontSize=25.sp,fontWeight=FontWeight.Bold)
+     Text("پیوندی تازه در امتداد تاریخ",color=Color.Gray,fontSize=12.sp,modifier=Modifier.padding(top=3.dp))
+    }
+    GoldRimCard(radius=14.dp){
+     Text(contacts.size.toString(),color=Color(0xFFE9D29B),fontSize=19.sp,fontWeight=FontWeight.Bold)
+     Text("گفتگو",color=Color(0xFFCBD4E1),fontSize=9.sp)
+    }
+   }
+   Row(Modifier.fillMaxWidth().padding(top=16.dp).clip(RoundedCornerShape(16.dp)).background(surface).border(1.dp,Gold.copy(alpha=.22f),RoundedCornerShape(16.dp)).padding(horizontal=13.dp,vertical=13.dp),verticalAlignment=Alignment.CenterVertically){
+    Icon(Icons.Default.Search,null,tint=Turquoise)
+    BasicTextField(value=search,onValueChange=onSearch,modifier=Modifier.weight(1f).padding(start=10.dp),singleLine=true,textStyle=TextStyle(color=fg,fontSize=14.sp),decorationBox={ inner -> if(search.isEmpty())Text("جستجو در گفتگوها و پیام‌ها...",color=Color.Gray,fontSize=13.sp);inner() })
+    if(search.isNotEmpty()) IconButton(onClick={onSearch("")},modifier=Modifier.size(24.dp)){Icon(Icons.Default.Close,null,tint=Color.Gray)}
+   }
+   Row(Modifier.fillMaxWidth().padding(top=17.dp,bottom=12.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
+    listOf("همه","خوانده‌نشده","گروه‌ها").forEach { item ->
+     val selected = filter == item
+     Box(Modifier.clip(RoundedCornerShape(50)).background(if(selected)Gold.copy(alpha=.18f) else surface).border(1.dp,if(selected)Gold else Color.White.copy(alpha=.08f),RoundedCornerShape(50)).clickable { filter=item }.padding(horizontal=15.dp,vertical=9.dp)){
+      Text(item,color=if(selected)Gold else fg,fontSize=12.sp,fontWeight=if(selected)FontWeight.Bold else FontWeight.Medium)
+     }
+    }
+   }
+   Row(Modifier.fillMaxWidth().padding(bottom=9.dp),verticalAlignment=Alignment.CenterVertically){
+    Text(if(filter=="گروه‌ها")"گروه‌های من" else if(filter=="خوانده‌نشده")"پیام‌های تازه" else "همه گفتگوها",color=fg,fontWeight=FontWeight.Bold,fontSize=14.sp)
+    Spacer(Modifier.weight(1f))
+    Text(filtered.size.toString()+" مورد",color=Color.Gray,fontSize=11.sp)
+   }
+   if(filtered.isEmpty()){
+    Box(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center){
+     Column(horizontalAlignment=Alignment.CenterHorizontally){
+      PersianMedallion(diameter=76.dp,symbol=if(filter=="گروه‌ها")"𐎠" else "⌕")
+      Spacer(Modifier.height(16.dp))
+      Text(when(filter){"گروه‌ها"->"هنوز گروهی ساخته نشده";"خوانده‌نشده"->"پیام خوانده‌نشده‌ای نیست";else->"نتیجه‌ای پیدا نشد"},color=fg,fontWeight=FontWeight.Bold,fontSize=16.sp)
+      Text(when(filter){"گروه‌ها"->"گروه‌های گفت‌وگو پس از ایجاد اینجا نمایش داده می‌شوند";"خوانده‌نشده"->"همه پیام‌ها بررسی شده‌اند";else->"عبارت دیگری را برای جستجو امتحان کن"},color=Color.Gray,fontSize=11.sp,textAlign=TextAlign.Center,modifier=Modifier.padding(top=7.dp))
+     }
+    }
+   }else{
+    LazyColumn(verticalArrangement=Arrangement.spacedBy(9.dp),contentPadding=PaddingValues(bottom=88.dp)){
+     items(filtered,key={it.name}){person->PersonRow(person,surface,fg){onOpen(person)}}
+    }
+   }
+  }
  }
 }
 @Composable private fun PersonRow(person:Person,surface:Color,fg:Color,onClick:()->Unit){
  Row(Modifier.fillMaxWidth().shadow(2.dp,RoundedCornerShape(18.dp)).clip(RoundedCornerShape(18.dp)).background(surface).clickable(onClick=onClick).padding(13.dp),verticalAlignment=Alignment.CenterVertically){
-  DimensionalAvatar(label=person.avatar,diameter=50.dp,online=person.name=="ماندانا")
+  DimensionalAvatar(label=person.avatar,diameter=50.dp,online=false)
   Column(Modifier.weight(1f).padding(start=12.dp)){Text(person.name,color=fg,fontWeight=FontWeight.Bold);Text(person.last,color=Color.Gray,fontSize=12.sp,maxLines=1)}
   Column(horizontalAlignment=Alignment.End){Text(person.time,color=Color.Gray,fontSize=10.sp);if(person.unread>0){Spacer(Modifier.height(5.dp));Box(Modifier.size(19.dp).background(Turquoise,CircleShape),contentAlignment=Alignment.Center){Text(person.unread.toString(),color=Night,fontSize=10.sp)}}}
  }
