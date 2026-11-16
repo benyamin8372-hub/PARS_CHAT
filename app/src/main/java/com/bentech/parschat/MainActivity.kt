@@ -51,6 +51,7 @@ import com.bentech.parschat.FirebaseChatRepository
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -179,7 +180,7 @@ class MainActivity:ComponentActivity(){
      OutlinedButton(onClick={page="blocked"},modifier=Modifier.fillMaxWidth()){Text("مدیریت کاربران مسدودشده")}
      OutlinedButton(onClick={page="admin"},modifier=Modifier.fillMaxWidth()){Text("پنل مدیریت")}
 
-    Spacer(Modifier.height(16.dp));Text("درباره برنامه",color=fg,fontWeight=FontWeight.Bold);Text("PARS CHAT  •  نسخه ۱.۱.۰",color=Gold);Text("ساخته بنیامین نوری دفرازی",color=fg);Spacer(Modifier.height(24.dp));Button(onClick={repository.setPresence(false){FirebaseAuth.getInstance().signOut();sessionUid=null;page="welcome"}},modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF8D3D45))){Text("خروج از حساب",color=Color.White)}
+    Spacer(Modifier.height(16.dp));Text("درباره برنامه",color=fg,fontWeight=FontWeight.Bold);Text("PARS CHAT  •  نسخه ۱.۱.۰",color=Gold);Text("ساخته بنیامین نوری دفرازی",color=fg);Spacer(Modifier.height(24.dp));Button(onClick={FirebaseMessaging.getInstance().token.addOnSuccessListener{token->repository.removeDeviceToken(token){repository.setPresence(false){FirebaseAuth.getInstance().signOut();sessionUid=null;page="welcome"}}}.addOnFailureListener{repository.setPresence(false){FirebaseAuth.getInstance().signOut();sessionUid=null;page="welcome"}}},modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF8D3D45))){Text("خروج از حساب",color=Color.White)}
    }
    else->Profile(name,photoUrl,{newName->name=newName;repository.updateDisplayName(newName){result->result.onFailure{Toast.makeText(context,it.localizedMessage,Toast.LENGTH_SHORT).show()}}},{uri->repository.uploadProfilePhoto(uri){result->result.onSuccess{photoUrl=it}.onFailure{Toast.makeText(context,it.localizedMessage ?: "بارگذاری عکس ناموفق بود",Toast.LENGTH_LONG).show()}}},bg,surface,fg){page="home"}
   }
