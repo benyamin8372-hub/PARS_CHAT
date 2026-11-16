@@ -19,8 +19,11 @@ Last updated: 2026-11-16
 
 ## Not yet complete — required before release
 
-- [ ] Replace sample contacts and sample messages with Firestore-backed user directory, conversations, and realtime messages.
-- [ ] Add user search that excludes the current user and respects blocked-user privacy.
+- [x] Remove hard-coded sample users and messages from production navigation.
+- [x] Add Firestore-backed user directory with live updates and self-profile exclusion.
+- [x] Add Firestore conversation observation and open/create private conversations.
+- [x] Connect private text-message timeline and sending to realtime Firestore listeners.
+- [x] Add user search that excludes the current user. Blocked-user filtering remains pending.
 - [ ] Persist and display accurate online/last-seen state with privacy controls.
 - [ ] Implement message edit/delete, reply, forward, and actual read receipts.
 - [ ] Implement image and voice-message upload/playback with Firebase Storage and runtime permissions.
