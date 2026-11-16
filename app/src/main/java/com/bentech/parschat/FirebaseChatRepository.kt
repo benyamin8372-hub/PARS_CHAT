@@ -233,6 +233,19 @@ class FirebaseChatRepository(
         sendText(destinationConversationId, sourceText, forwardedFrom = sourceMessageId, onResult = onResult)
     }
 
+    fun uploadProfilePhoto(uri: Uri, onResult: (Result<String>) -> Unit) {
+        val uid = currentUserId() ?: run { onResult(Result.failure(IllegalStateException("ورود لازم است."))); return }
+        val ref = storage.reference.child("users/$uid/profile/avatar.jpg")
+        ref.putFile(uri).continueWithTask { task ->
+            if (!task.isSuccessful) throw task.exception ?: IllegalStateException("بارگذاری تصویر ناموفق بود.")
+            ref.downloadUrl
+        }.addOnSuccessListener { download ->
+            db.collection("users").document(uid).update("photoUrl", download.toString())
+                .addOnSuccessListener { onResult(Result.success(download.toString())) }
+                .addOnFailureListener { onResult(Result.failure(it)) }
+        }.addOnFailureListener { onResult(Result.failure(it)) }
+    }
+
     fun uploadMedia(conversationId: String, uri: Uri, mimeType: String, onResult: (Result<String>) -> Unit) {
         val uid = currentUserId() ?: run { onResult(Result.failure(IllegalStateException("ورود لازم است."))); return }
         val safeType = when {
