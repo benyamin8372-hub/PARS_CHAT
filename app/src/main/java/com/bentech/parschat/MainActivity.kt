@@ -66,10 +66,9 @@ private data class Person(val name:String,val last:String,val time:String,val un
 private data class Message(val body:String,val mine:Boolean,val time:String,val id:String="",val senderId:String="",val type:String="text",val mediaUrl:String?=null,val edited:Boolean=false,val deleted:Boolean=false,val readBy:Map<String,Boolean> = emptyMap(),val replyToId:String?=null,val replyToText:String?=null,val forwardedFrom:String?=null)
 
 class MainActivity:ComponentActivity(){
- private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
  private val presenceRepository by lazy { FirebaseChatRepository() }
  override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);window.statusBarColor=android.graphics.Color.rgb(9,19,47);window.navigationBarColor=android.graphics.Color.rgb(9,19,47);setContent{ParsChatApp()}}
- override fun onStart(){super.onStart();if(FirebaseAuth.getInstance().currentUser!=null){presenceRepository.setPresence(true);if(android.os.Build.VERSION.SDK_INT>=33 && ContextCompat.checkSelfPermission(this,Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)}}
+ override fun onStart(){super.onStart();if(FirebaseAuth.getInstance().currentUser!=null)presenceRepository.setPresence(true)}
  override fun onStop(){if(FirebaseAuth.getInstance().currentUser!=null)presenceRepository.setPresence(false);super.onStop()}
 }
 @Composable private fun ParsChatApp(){
@@ -80,6 +79,11 @@ class MainActivity:ComponentActivity(){
  val repository = remember { FirebaseChatRepository() }
  var conversationId by remember{mutableStateOf<String?>(null)}
  val context= LocalContext.current
+ val notificationPermission=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){ }
+ LaunchedEffect(sessionUid){
+  if(sessionUid!=null && android.os.Build.VERSION.SDK_INT>=33 && ContextCompat.checkSelfPermission(context,Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)
+   notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+ }
  var dark by remember{mutableStateOf(true)}
  var name by remember{mutableStateOf(FirebaseAuth.getInstance().currentUser?.displayName ?: "کاربر")}
  var photoUrl by remember{mutableStateOf<String?>(null)}
