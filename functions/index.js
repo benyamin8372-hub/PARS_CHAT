@@ -82,6 +82,10 @@ exports.setUserDisabled = onCall({ region: "europe-west1" }, async (request) => 
   if (!request.auth || request.auth.token.admin !== true) {
     throw new HttpsError("permission-denied", "مدیر مجاز نیست.");
   }
+  const adminStatus = await db.collection("accountStatus").doc(request.auth.uid).get();
+  if (adminStatus.exists && adminStatus.data().suspended === true) {
+    throw new HttpsError("permission-denied", "دسترسی این حساب غیرفعال شده است.");
+  }
   const uid = String(request.data && request.data.uid || "");
   const disabled = request.data && request.data.disabled;
   if (!uid || typeof disabled !== "boolean" || uid === request.auth.uid) {
