@@ -14,6 +14,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import coil.compose.AsyncImage
 import android.media.MediaPlayer
+import android.media.MediaRecorder
+import android.Manifest
+import android.content.pm.PackageManager
+import android.net.Uri
+import java.io.File
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -279,6 +285,36 @@ class MainActivity:ComponentActivity(){
  var forwardTarget by remember{mutableStateOf<Message?>(null)}
  var blockConfirm by remember{mutableStateOf(false)}
  var uploadBusy by remember{mutableStateOf(false)}
+ var recording by remember{mutableStateOf(false)}
+ var recorder by remember{mutableStateOf<MediaRecorder?>(null)}
+ var recordingFile by remember{mutableStateOf<File?>(null)}
+ val microphonePermission=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){granted->
+  if(granted){
+   try{
+    val file=File(context.cacheDir,"pars_voice_${System.currentTimeMillis()}.m4a")
+    val media=MediaRecorder().apply{setAudioSource(MediaRecorder.AudioSource.MIC);setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);setAudioEncoder(MediaRecorder.AudioEncoder.AAC);setOutputFile(file.absolutePath);prepare();start()}
+    recorder=media;recordingFile=file;recording=true
+   }catch(error:Exception){chatError=error.localizedMessage ?: "شروع ضبط ممکن نشد."}
+  }else chatError="مجوز میکروفون داده نشد."
+ }
+ val beginRecording:()->Unit={
+  try{
+   val file=File(context.cacheDir,"pars_voice_${System.currentTimeMillis()}.m4a")
+   val media=MediaRecorder().apply{setAudioSource(MediaRecorder.AudioSource.MIC);setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);setAudioEncoder(MediaRecorder.AudioEncoder.AAC);setOutputFile(file.absolutePath);prepare();start()}
+   recorder=media;recordingFile=file;recording=true
+  }catch(error:Exception){chatError=error.localizedMessage ?: "شروع ضبط ممکن نشد."}
+ }
+ val finishRecording:()->Unit={
+  try{
+   recorder?.stop();recorder?.release();recorder=null;recording=false
+   val file=recordingFile
+   if(file!=null && file.exists() && conversationId!=null){
+    uploadBusy=true
+    repository.uploadMedia(conversationId,Uri.fromFile(file),"audio/mp4"){result->uploadBusy=false;file.delete();result.onFailure{chatError=it.localizedMessage ?: "ارسال پیام صوتی ناموفق بود."}}
+   }
+  }catch(error:Exception){recorder?.release();recorder=null;recording=false;chatError="ضبط صوت خیلی کوتاه بود یا متوقف نشد."}
+ }
+ DisposableEffect(Unit){onDispose{recorder?.release();recorder=null}}
  val imagePicker=rememberLauncherForActivityResult(ActivityResultContracts.GetContent()){uri->
   if(uri!=null && conversationId!=null){
    uploadBusy=true
@@ -327,7 +363,8 @@ class MainActivity:ComponentActivity(){
    }
    Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically){
     IconButton(onClick={imagePicker.launch("image/*")},enabled=!uploadBusy){Icon(Icons.Default.Image,null,tint=Turquoise)}
-    IconButton(onClick={audioPicker.launch("audio/*")},enabled=!uploadBusy){Icon(Icons.Default.Mic,null,tint=Turquoise)}
+    IconButton(onClick={audioPicker.launch("audio/*")},enabled=!uploadBusy){Icon(Icons.Default.AttachFile,null,tint=Turquoise)}
+    IconButton(onClick={if(recording)finishRecording() else if(ContextCompat.checkSelfPermission(context,Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED)beginRecording() else microphonePermission.launch(Manifest.permission.RECORD_AUDIO),enabled=!uploadBusy){Icon(if(recording)Icons.Default.Stop else Icons.Default.Mic,null,tint=if(recording)Color(0xFFE57373) else Turquoise)}
     Row(Modifier.weight(1f).clip(RoundedCornerShape(22.dp)).background(bg).padding(horizontal=13.dp,vertical=5.dp),verticalAlignment=Alignment.CenterVertically){
      BasicTextField(draft,{draft=it},Modifier.weight(1f).padding(vertical=9.dp),textStyle=TextStyle(color=fg),decorationBox={inner->if(draft.isEmpty())Text("پیام بنویس...",color=Color.Gray);inner()})
      Icon(Icons.Default.EmojiEmotions,null,tint=Color.Gray)
