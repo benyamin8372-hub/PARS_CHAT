@@ -102,7 +102,7 @@ service cloud.firestore {
               && request.resource.data.mimeType is string)
           )
           && request.resource.data.keys().hasOnly([
-            'senderId','text','createdAt','type','readBy','replyToId','replyToText','mediaUrl','mimeType'
+            'senderId','text','createdAt','type','readBy','replyToId','replyToText','forwardedFrom','mediaUrl','mimeType'
           ]);
         allow update: if member(conversationId) && (
           (resource.data.senderId == request.auth.uid
