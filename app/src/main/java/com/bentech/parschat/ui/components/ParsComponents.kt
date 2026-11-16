@@ -23,7 +23,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -37,6 +39,97 @@ private val Gold = Color(0xFFC9A45D)
 private val PaleGold = Color(0xFFE9D29B)
 private val Turquoise = Color(0xFF559B96)
 private val Ivory = Color(0xFFF3EFE5)
+
+
+/**
+ * Stylized Faravahar-inspired winged emblem for the PARS CHAT identity.
+ * Original geometric artwork, rendered in metallic gold.
+ */
+@Composable
+fun FaravaharMark(
+    modifier: Modifier = Modifier,
+    diameter: Dp = 64.dp,
+    glow: Float = 0.55f
+) {
+    Box(
+        modifier = modifier
+            .size(diameter)
+            .shadow(14.dp, CircleShape)
+            .clip(CircleShape)
+            .background(Brush.radialGradient(listOf(Color(0xFF29436D), Midnight)))
+            .border(1.5.dp, PaleGold.copy(alpha = glow), CircleShape)
+            .padding(diameter * .12f),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(Modifier.fillMaxSize()) {
+            val sx = size.width / 108f
+            val sy = size.height / 108f
+            val gold = Color(0xFFE9D29B).copy(alpha = .96f)
+            val fine = Color(0xFFC9A45D).copy(alpha = .88f)
+            fun pt(x: Float, y: Float) = androidx.compose.ui.geometry.Offset(x * sx, y * sy)
+            val stroke = 2.7f * sx
+
+            val leftWing = Path().apply {
+                moveTo(49f * sx, 43f * sy)
+                cubicTo(37f * sx, 30f * sy, 20f * sx, 24f * sy, 5f * sx, 27f * sy)
+                cubicTo(17f * sx, 35f * sy, 26f * sx, 42f * sy, 36f * sx, 48f * sy)
+                cubicTo(24f * sx, 45f * sy, 15f * sx, 47f * sy, 7f * sx, 53f * sy)
+                cubicTo(23f * sx, 56f * sy, 36f * sx, 54f * sy, 49f * sx, 50f * sy)
+            }
+            val rightWing = Path().apply {
+                moveTo(59f * sx, 43f * sy)
+                cubicTo(71f * sx, 30f * sy, 88f * sx, 24f * sy, 103f * sx, 27f * sy)
+                cubicTo(91f * sx, 35f * sy, 82f * sx, 42f * sy, 72f * sx, 48f * sy)
+                cubicTo(84f * sx, 45f * sy, 93f * sx, 47f * sy, 101f * sx, 53f * sy)
+                cubicTo(85f * sx, 56f * sy, 72f * sx, 54f * sy, 59f * sx, 50f * sy)
+            }
+            drawPath(leftWing, gold, style = Stroke(stroke, cap = StrokeCap.Round))
+            drawPath(rightWing, gold, style = Stroke(stroke, cap = StrokeCap.Round))
+            for (i in 0..3) {
+                val y = 31f + i * 5.2f
+                drawLine(fine, pt(11f + i * 2f, y + 3f), pt(43f, y + 12f), strokeWidth = 1.35f * sx, cap = StrokeCap.Round)
+                drawLine(fine, pt(97f - i * 2f, y + 3f), pt(65f, y + 12f), strokeWidth = 1.35f * sx, cap = StrokeCap.Round)
+            }
+
+            drawCircle(fine, radius = 17f * sx, center = pt(54f, 43f), style = Stroke(1.8f * sx))
+            drawCircle(gold, radius = 5.2f * sx, center = pt(54f, 25f), style = Stroke(2.2f * sx))
+            drawLine(gold, pt(54f, 31f), pt(54f, 55f), strokeWidth = 2.5f * sx, cap = StrokeCap.Round)
+            drawLine(gold, pt(54f, 36f), pt(43f, 42f), strokeWidth = 2.2f * sx, cap = StrokeCap.Round)
+            drawLine(gold, pt(54f, 36f), pt(65f, 42f), strokeWidth = 2.2f * sx, cap = StrokeCap.Round)
+            drawCircle(gold, radius = 1.8f * sx, center = pt(42f, 42f))
+            drawCircle(gold, radius = 1.8f * sx, center = pt(66f, 42f))
+
+            val tail = Path().apply {
+                moveTo(54f * sx, 55f * sy)
+                cubicTo(47f * sx, 64f * sy, 42f * sx, 72f * sy, 35f * sx, 79f * sy)
+                moveTo(54f * sx, 55f * sy)
+                cubicTo(54f * sx, 66f * sy, 54f * sx, 74f * sy, 54f * sx, 84f * sy)
+                moveTo(54f * sx, 55f * sy)
+                cubicTo(61f * sx, 64f * sy, 66f * sx, 72f * sy, 73f * sx, 79f * sy)
+            }
+            drawPath(tail, gold, style = Stroke(2.2f * sx, cap = StrokeCap.Round))
+            drawLine(fine, pt(35f, 79f), pt(43f, 75f), strokeWidth = 1.3f * sx)
+            drawLine(fine, pt(54f, 84f), pt(54f, 75f), strokeWidth = 1.3f * sx)
+            drawLine(fine, pt(73f, 79f), pt(65f, 75f), strokeWidth = 1.3f * sx)
+        }
+    }
+}
+
+/** Horizontal brand lockup: Faravahar emblem followed by the Persian and Latin wordmarks. */
+@Composable
+fun ParsBrandLockup(
+    modifier: Modifier = Modifier,
+    emblemSize: Dp = 58.dp,
+    glow: Float = 0.55f
+) {
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+        FaravaharMark(diameter = emblemSize, glow = glow)
+        Column(Modifier.padding(start = 12.dp)) {
+            Text("چت پارس", color = PaleGold, fontSize = 23.sp, fontWeight = FontWeight.Black)
+            Text("PARS CHAT", color = Ivory.copy(alpha = .82f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.4.sp)
+        }
+    }
+}
 
 /**
  * Reusable raised lapis surface with a restrained metallic keyline.
