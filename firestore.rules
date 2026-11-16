@@ -67,11 +67,12 @@ service cloud.firestore {
             && request.resource.data.admins == [request.auth.uid])
         );
       allow update: if signedIn() && request.auth.uid in resource.data.participants
-        && request.resource.data.participants == resource.data.participants
         && (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['updatedAt','lastMessage','lastMessageAt'])
+          (request.resource.data.participants == resource.data.participants
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['updatedAt','lastMessage','lastMessageAt']))
           || (resource.data.type == 'group'
             && request.auth.uid in resource.data.admins
+            && request.resource.data.participants == resource.data.participants
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','updatedAt']))
           || (resource.data.type == 'group'
             && request.auth.uid in resource.data.admins
