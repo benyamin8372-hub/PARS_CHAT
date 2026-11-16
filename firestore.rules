@@ -27,11 +27,28 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if signedIn() && request.auth.uid == userId
         && request.resource.data.uid == userId
-        && request.resource.data.keys().hasOnly(['uid','displayName','photoUrl','createdAt','lastSeen','online','showOnline','showLastSeen','blockedCount']);
+        && request.resource.data.keys().hasOnly(['uid','displayName','photoUrl','createdAt','showOnline','showLastSeen','blockedCount']);
       allow update: if signedIn() && request.auth.uid == userId
         && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['displayName','photoUrl','lastSeen','online','showOnline','showLastSeen']);
+          .hasOnly(['displayName','photoUrl','showOnline','showLastSeen']);
       allow delete: if false;
+
+      match /presence/{presenceDoc} {
+        allow get: if signedIn() && (
+          request.auth.uid == userId
+          || (presenceDoc == 'online' && get(/databases/$(database)/documents/users/$(userId)).data.showOnline == true)
+          || (presenceDoc == 'lastSeen' && get(/databases/$(database)/documents/users/$(userId)).data.showLastSeen == true)
+        );
+        allow list: if false;
+        allow create, update: if signedIn() && request.auth.uid == userId && (
+          (presenceDoc == 'online'
+            && request.resource.data.keys().hasOnly(['online','updatedAt'])
+            && request.resource.data.online is bool)
+          || (presenceDoc == 'lastSeen'
+            && request.resource.data.keys().hasOnly(['lastSeen']))
+        );
+        allow delete: if false;
+      }
 
       match /blocked/{blockedUid} {
         allow read: if signedIn() && request.auth.uid == userId;
